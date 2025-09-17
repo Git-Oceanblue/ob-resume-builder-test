@@ -1,4 +1,4 @@
-aws s3api create-bucket --bucket resume-auto-terraform-state-123456 --region us-east-1
+aws s3api create-bucket --bucket test-resume-auto-terraform-state --region us-east-2
 
 aws s3api put-bucket-versioning --bucket resume-auto-terraform-state-123456 --versioning-configuration Status=Enabled
 
