@@ -244,7 +244,6 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
         {
           companyName: '',
           roleName: '',
-          description: '',
           responsibilities: [''],
           client: '',
           customer: '',
@@ -975,16 +974,6 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
                     value={job.roleName || ''}
                     onChange={(e) => handleEmploymentChange(index, 'roleName', e.target.value)}
                     className="w-full px-3 py-2 border rounded-md"
-                  />
-                </div>
-                
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    value={job.description || ''}
-                    onChange={(e) => handleEmploymentChange(index, 'description', e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                    rows="3"
                   />
                 </div>
                 

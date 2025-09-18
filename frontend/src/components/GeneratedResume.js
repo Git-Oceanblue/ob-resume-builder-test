@@ -82,13 +82,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 }),
                 new TextRun({
                   text: ' (AA/AS, BA/BS, MA/MS/MBA, PhD, JD)',
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -111,7 +111,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -134,7 +134,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -157,7 +157,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -180,13 +180,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 }),
                 new TextRun({
                   text: ' (Yes/No)',
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -209,13 +209,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 }),
                 new TextRun({
                   text: ' (MM/YY)',
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -343,7 +343,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -366,7 +366,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -389,13 +389,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 }),
                 new TextRun({
                   text: ' (MM/YY)',
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -418,13 +418,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 }),
                 new TextRun({
                   text: ' (If Applicable)',
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -447,13 +447,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 }),
                 new TextRun({
                   text: ' (If Applicable)',
                   size: 20,
                   color: '000000',
-                  font: "Arial"
+                  font: "Calibri"
                 })
               ]
             })],
@@ -828,30 +828,6 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             })
           );
         }
-        
-        // Description
-        if (job.description) {
-          paragraphs.push(
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: 'Description:',
-                  bold: true,
-                  size: 22,
-                  color: '000000',
-                  font: "Calibri"
-                }),
-                new TextRun({
-                  text: ' ' + job.description,
-                  size: 22,
-                  font: "Calibri",
-                  color: '000000'
-                }),
-              ],
-            })
-          );
-        }
-        
         // Client Projects
         if (job.clientProjects && job.clientProjects.length > 0) {
           paragraphs.push(
@@ -1055,7 +1031,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
               },
               children: [
                 new TextRun({
-                  text: 'Key Technologies/Skills:',
+                  text: 'Technical Skills:',
                   bold: true,
                   size: 22,
                   color: '000000',

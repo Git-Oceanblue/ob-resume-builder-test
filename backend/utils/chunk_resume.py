@@ -4,6 +4,17 @@ from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+BULLET_PREFIX_PATTERN = re.compile(r'^\s*(?:--+|[-*\u2022\u2023\u25E6\u2043\u2219\u00B7]+)(?:\s+|(?=[A-Za-z0-9]))')
+
+def strip_bullet_prefix(text: str) -> str:
+    stripped = text
+    while True:
+        new_text = BULLET_PREFIX_PATTERN.sub('', stripped, count=1)
+        if new_text == stripped:
+            break
+        stripped = new_text
+    return stripped.lstrip()
+
 def chunk_resume_from_bold_headings(raw_text: str) -> Dict[str, str]:
     """
     Chunk resume from bold headings
@@ -127,7 +138,8 @@ def find_sections_by_words(raw_text: str, section_keywords: Dict[str, List[str]]
     original_position = 0
     
     for line_index, line in enumerate(lines):
-        clean_line = line.lower().strip()
+        stripped_line = strip_bullet_prefix(line)
+        clean_line = stripped_line.lower().strip()
   
         if len(clean_line) < 3:
             current_position += len(line) + 1  # +1 for newline
@@ -147,8 +159,8 @@ def find_sections_by_words(raw_text: str, section_keywords: Dict[str, List[str]]
                  
                         if is_line_standalone(line, lines, line_index):
                           
-                            line_start_in_raw = find_line_position_in_raw_text(raw_text, line, original_position)
-                            line_end_in_raw = line_start_in_raw + find_original_line_length(raw_text, line, line_start_in_raw)
+                            line_start_in_raw = find_line_position_in_raw_text(raw_text, stripped_line, original_position)
+                            line_end_in_raw = line_start_in_raw + find_original_line_length(raw_text, stripped_line, line_start_in_raw)
                             
                             logger.info(f'Found section: "{clean_line}" -> {section_key} at line {line_index + 1}')
                             
@@ -165,8 +177,8 @@ def find_sections_by_words(raw_text: str, section_keywords: Dict[str, List[str]]
                    
                     if line_without_colon.startswith(keyword_lower + ' '):
                         if is_line_standalone(line, lines, line_index):
-                            line_start_in_raw = find_line_position_in_raw_text(raw_text, line, original_position)
-                            line_end_in_raw = line_start_in_raw + find_original_line_length(raw_text, line, line_start_in_raw)
+                            line_start_in_raw = find_line_position_in_raw_text(raw_text, stripped_line, original_position)
+                            line_end_in_raw = line_start_in_raw + find_original_line_length(raw_text, stripped_line, line_start_in_raw)
                             
                             logger.info(f'Found section (starts-with): "{clean_line}" -> {section_key} at line {line_index + 1}')
                             
@@ -444,3 +456,4 @@ def extract_certifications_from_text(raw_text: str, sections: Dict[str, str]) ->
             sections['certifications'] += '\n' + '\n'.join(certification_lines)
         else:
             sections['certifications'] = '\n'.join(certification_lines)
+

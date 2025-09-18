@@ -66,10 +66,6 @@ async def extract_data_from_text(text: str) -> Dict[str, Any]:
                             "roleName": {"type": "string", "description": "Job title or role"},
                             "workPeriod": {"type": "string", "description": "Period of employment in format 'Jan 2020 - Dec 2022'. Convert any date format to this standard: first 3 letters of month, space, year, space, hyphen, space, first 3 letters of month, space, year. For current/present positions use 'Till Date' (e.g., 'Jan 2020 - Till Date')"},
                             "location": {"type": "string", "description": "Job location"},
-                            "description": {
-                                "type": "string",
-                                "description": "General description of the job, excluding specific responsibilities and subsections"
-                            },
                             "project": {"type": "string", "description": "Project name ONLY if explicitly mentioned in resume text"},
                             "client": {"type": "string", "description": "Client name ONLY if explicitly mentioned separately from company in resume text"},
                             "customer": {"type": "string", "description": "Customer name ONLY if explicitly mentioned in resume text"},
@@ -232,6 +228,7 @@ SECTION-SPECIFIC MANDATES:
 
 - EMPLOYMENT HISTORY - MOST CRITICAL SECTION: 
   * Extract EVERY job position with ALL details - NO EXCEPTIONS
+  * **IMPORTANT** - Strictly Make sure every date format in employment history is converted to the standard format: first 3 letters of month, space, year, space, hyphen, space, first 3 letters of month, space, year. For current/present positions use 'Till Date' (e.g., 'Jan 2020 - Till Date')
   * MULTIPLE CLIENTS/PROJECTS: If one job entry contains work for multiple clients or projects, extract each client/project separately in the clientProjects array
   * CLIENT IDENTIFICATION: Look for patterns like "Client: XYZ Corp", "Project for ABC Inc", or multiple company names within one job
   * Include ALL responsibilities and ALL subsections

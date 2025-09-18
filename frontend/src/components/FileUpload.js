@@ -229,7 +229,6 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
         roleName: job.roleName || '',
         workPeriod: job.workPeriod || '',
         location: job.location || '',
-        description: job.description || '',
         project: job.project || '',
         customer: job.customer || '',
         projectRole: job.projectRole || '',
