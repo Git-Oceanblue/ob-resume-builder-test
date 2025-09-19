@@ -44,123 +44,6 @@ def clean_bullet_points(data: Dict[str, Any]) -> Dict[str, Any]:
     
     return data
 
-def normalize_dates(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Normalize date formats to 'MMM YYYY - MMM YYYY' standard"""
-    import re
-    from datetime import datetime
-    
-    # Month mappings
-    month_names = {
-        'january': 'Jan', 'february': 'Feb', 'march': 'Mar', 'april': 'Apr',
-        'may': 'May', 'june': 'Jun', 'july': 'Jul', 'august': 'Aug',
-        'september': 'Sep', 'october': 'Oct', 'november': 'Nov', 'december': 'Dec',
-        'jan': 'Jan', 'feb': 'Feb', 'mar': 'Mar', 'apr': 'Apr',
-        'may': 'May', 'jun': 'Jun', 'jul': 'Jul', 'aug': 'Aug',
-        'sep': 'Sep', 'oct': 'Oct', 'nov': 'Nov', 'dec': 'Dec'
-    }
-    
-    month_numbers = {
-        '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun',
-        '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
-        '1': 'Jan', '2': 'Feb', '3': 'Mar', '4': 'Apr', '5': 'May', '6': 'Jun',
-        '7': 'Jul', '8': 'Aug', '9': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec'
-    }
-    
-    def convert_2digit_year(year_str):
-        """Convert 2-digit year to 4-digit year"""
-        year = int(year_str)
-        current_year = datetime.now().year
-        current_2digit = current_year % 100
-        
-        # If 2-digit year is <= current 2-digit year, assume 20xx
-        # If 2-digit year is > current 2-digit year, assume 19xx
-        if year <= current_2digit + 10:  # Allow up to 10 years in future
-            return f"20{year:02d}"
-        else:
-            return f"19{year:02d}"
-    
-    def normalize_date_string(date_str):
-        """Normalize a single date string to standard format"""
-        if not date_str or not isinstance(date_str, str):
-            return date_str
-            
-        date_str = date_str.strip()
-        
-        # Handle present/current/ongoing cases
-        present_patterns = r'\b(present|current|ongoing|till\s+date|now)\b'
-        if re.search(present_patterns, date_str, re.IGNORECASE):
-            # Replace present/current with "Till Date"
-            date_str = re.sub(present_patterns, 'Till Date', date_str, flags=re.IGNORECASE)
-        
-        # Pattern 1: "January 2024 - February 2025" or "Jan 2024 - Feb 2025"
-        pattern1 = r'\b([a-zA-Z]+)\s+(\d{4})\s*[-–—]\s*([a-zA-Z]+)\s+(\d{4})\b'
-        match1 = re.search(pattern1, date_str)
-        if match1:
-            start_month, start_year, end_month, end_year = match1.groups()
-            start_month_norm = month_names.get(start_month.lower(), start_month)
-            end_month_norm = month_names.get(end_month.lower(), end_month)
-            return f"{start_month_norm} {start_year} - {end_month_norm} {end_year}"
-        
-        # Pattern 2: "Jan 22 - Feb 24" (2-digit years)
-        pattern2 = r'\b([a-zA-Z]+)\s+(\d{2})\s*[-–—]\s*([a-zA-Z]+)\s+(\d{2})\b'
-        match2 = re.search(pattern2, date_str)
-        if match2:
-            start_month, start_year, end_month, end_year = match2.groups()
-            start_month_norm = month_names.get(start_month.lower(), start_month)
-            end_month_norm = month_names.get(end_month.lower(), end_month)
-            start_year_norm = convert_2digit_year(start_year)
-            end_year_norm = convert_2digit_year(end_year)
-            return f"{start_month_norm} {start_year_norm} - {end_month_norm} {end_year_norm}"
-        
-        # Pattern 3: "01/2024 - 02/2025" or "1/2024 - 2/2025"
-        pattern3 = r'\b(\d{1,2})/(\d{4})\s*[-–—]\s*(\d{1,2})/(\d{4})\b'
-        match3 = re.search(pattern3, date_str)
-        if match3:
-            start_month, start_year, end_month, end_year = match3.groups()
-            start_month_norm = month_numbers.get(start_month, start_month)
-            end_month_norm = month_numbers.get(end_month, end_month)
-            return f"{start_month_norm} {start_year} - {end_month_norm} {end_year}"
-        
-        # Pattern 4: "2024-01 to 2025-02" or similar
-        pattern4 = r'\b(\d{4})[-/](\d{1,2})\s*(?:to|[-–—])\s*(\d{4})[-/](\d{1,2})\b'
-        match4 = re.search(pattern4, date_str)
-        if match4:
-            start_year, start_month, end_year, end_month = match4.groups()
-            start_month_norm = month_numbers.get(start_month, start_month)
-            end_month_norm = month_numbers.get(end_month, end_month)
-            return f"{start_month_norm} {start_year} - {end_month_norm} {end_year}"
-        
-        # Pattern 5: Single month-year with present/current
-        pattern5 = r'\b([a-zA-Z]+)\s+(\d{4})\s*[-–—]\s*(Till\s+Date|present|current)\b'
-        match5 = re.search(pattern5, date_str, re.IGNORECASE)
-        if match5:
-            start_month, start_year, end_part = match5.groups()
-            start_month_norm = month_names.get(start_month.lower(), start_month)
-            return f"{start_month_norm} {start_year} - Till Date"
-        
-        # Pattern 6: Single year with present/current
-        pattern6 = r'\b(\d{4})\s*[-–—]\s*(Till\s+Date|present|current)\b'
-        match6 = re.search(pattern6, date_str, re.IGNORECASE)
-        if match6:
-            start_year, end_part = match6.groups()
-            return f"{start_year} - Till Date"
-        
-        return date_str
-    
-    # Apply normalization to employment history
-    if data.get('employmentHistory'):
-        for job in data['employmentHistory']:
-            if job.get('workPeriod'):
-                job['workPeriod'] = normalize_date_string(job['workPeriod'])
-            
-            # Also normalize client project periods
-            if job.get('clientProjects'):
-                for client_project in job['clientProjects']:
-                    if client_project.get('period'):
-                        client_project['period'] = normalize_date_string(client_project['period'])
-    
-    return data
-
 async def extract_data_from_text(text: str) -> Dict[str, Any]:
     logger.info('\n=== AI PARSER: Starting OpenAI extraction with function calling ===')
     logger.info(f'Text length: {len(text)} characters')
@@ -206,7 +89,7 @@ async def extract_data_from_text(text: str) -> Dict[str, Any]:
                         "properties": {
                             "companyName": {"type": "string", "description": "Name of the company"},
                             "roleName": {"type": "string", "description": "Job title or role"},
-                            "workPeriod": {"type": "string", "description": "Period of employment in format **Jan 2020 - Dec 2022**"},
+                            "workPeriod": {"type": "string", "description": "Period of employment in format **Jan 2020 - Dec 2022**. For current/present positions use **Till Date**"},
                             "location": {"type": "string", "description": "Job location"},
                             "project": {"type": "string", "description": "Project name ONLY if explicitly mentioned in resume text"},
                             "client": {"type": "string", "description": "Client name ONLY if explicitly mentioned separately from company in resume text"},
@@ -337,7 +220,7 @@ async def extract_data_from_text(text: str) -> Dict[str, Any]:
         try:
             parsed_data = json.loads(tool_call_arguments)
             logger.info('✅ Function calling extraction successful')
-            return normalize_dates(clean_bullet_points(parsed_data))
+            return clean_bullet_points(parsed_data)
         except json.JSONDecodeError as parse_error:
             logger.error(f'❌ JSON parsing error: {parse_error}')
             return get_default_resume_structure()

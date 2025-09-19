@@ -82,13 +82,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 }),
                 new TextRun({
                   text: ' (AA/AS, BA/BS, MA/MS/MBA, PhD, JD)',
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -111,7 +111,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -134,7 +134,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -157,7 +157,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -180,13 +180,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 }),
                 new TextRun({
                   text: ' (Yes/No)',
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -209,13 +209,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 }),
                 new TextRun({
                   text: ' (MM/YY)',
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -232,27 +232,45 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             children: [
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.degree || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: edu.degree || '-', font: "Calibri", size: 22 })]
+                })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.areaOfStudy || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: edu.areaOfStudy || '-', font: "Calibri", size: 22 })]
+                })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.school || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: edu.school || '-', font: "Calibri", size: 22 })]
+                })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.location || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: edu.location || '-', font: "Calibri", size: 22 })]
+                })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.wasAwarded ? 'Yes' : 'No' || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: edu.wasAwarded ? 'Yes' : 'No' || '-', font: "Calibri", size: 22 })]
+                })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.date || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: edu.date || '-', font: "Calibri", size: 22 })]
+                })],
               }),
             ],
           })
@@ -265,27 +283,45 @@ const GeneratedResume = ({ resumeData, onBack }) => {
           children: [
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
           ],
         })
@@ -362,7 +398,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -385,7 +421,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -408,13 +444,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 }),
                 new TextRun({
                   text: ' (MM/YY)',
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -437,13 +473,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 }),
                 new TextRun({
                   text: ' (If Applicable)',
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -466,13 +502,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   bold: true,
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 }),
                 new TextRun({
                   text: ' (If Applicable)',
                   size: 20,
                   color: '000000',
-                  font: "Calibri"
+                  font: "Arial"
                 })
               ]
             })],
@@ -489,23 +525,38 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             children: [
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.name || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: cert.name || '-', font: "Calibri", size: 22 })]
+                })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.issuedBy || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: cert.issuedBy || '-', font: "Calibri", size: 22 })]
+                })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.dateObtained || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: cert.dateObtained || '-', font: "Calibri", size: 22 })]
+                })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.certificationNumber || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: cert.certificationNumber || '-', font: "Calibri", size: 22 })]
+                })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.expirationDate || '-' })],
+                children: [new Paragraph({ 
+                  alignment: AlignmentType.CENTER, 
+                  children: [new TextRun({ text: cert.expirationDate || '-', font: "Calibri", size: 22 })]
+                })],
               }),
             ],
           })
@@ -518,23 +569,38 @@ const GeneratedResume = ({ resumeData, onBack }) => {
           children: [
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+              children: [new Paragraph({ 
+                alignment: AlignmentType.CENTER, 
+                children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
+              })],
             }),
           ],
         })
@@ -943,6 +1009,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                 if (resp.trim()) {
                   paragraphs.push(
                     new Paragraph({
+                      alignment: AlignmentType.JUSTIFY,
                       bullet: {
                         level: 1
                       },
@@ -985,6 +1052,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             if (resp.trim()) {
               paragraphs.push(
                 new Paragraph({
+                  alignment: AlignmentType.JUSTIFY,
                   bullet: {
                     level: 0
                   },
@@ -1033,6 +1101,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   if (item.trim()) {
                     paragraphs.push(
                       new Paragraph({
+                        alignment: AlignmentType.JUSTIFY,
                         bullet: {
                           level: 0
                         },
@@ -1060,6 +1129,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         if (job.keyTechnologies) {
           paragraphs.push(
             new Paragraph({
+              alignment: AlignmentType.JUSTIFY,
               spacing: {
                 before: 200
               },
@@ -1105,6 +1175,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             if (achievement.trim()) {
               paragraphs.push(
                 new Paragraph({
+                  alignment: AlignmentType.JUSTIFY,
                   bullet: {
                     level: 0
                   },
@@ -1446,6 +1517,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
               // Professional Summary Content
               ...(resumeData.professionalSummary || []).map(point => (
                 new Paragraph({
+                  alignment: AlignmentType.JUSTIFY,
                   bullet: {
                     level: 0
                   },
@@ -1485,6 +1557,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   ...(subsection.content && subsection.content.length > 0 
                     ? subsection.content.map(item => (
                         new Paragraph({
+                          alignment: AlignmentType.JUSTIFY,
                           bullet: {
                             level: 0
                           },
