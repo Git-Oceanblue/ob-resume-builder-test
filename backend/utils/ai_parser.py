@@ -9,7 +9,7 @@ from openai import AsyncOpenAI
 
 
 from .token_logger import start_timing, log_token_usage, log_cache_analysis
-from .chunk_resume import chunk_resume_from_bold_headings
+from .chunk_resume import chunk_resume_from_bold_headings, strip_bullet_prefix
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,31 @@ if not api_key:
     raise ValueError("OPENAI_API_KEY environment variable is not set")
 
 client = AsyncOpenAI(api_key=api_key)
+
+def clean_bullet_points(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Clean bullet point prefixes from OpenAI response data"""
+    if data.get('professionalSummary'):
+        data['professionalSummary'] = [strip_bullet_prefix(item) for item in data['professionalSummary']]
+    
+    if data.get('summarySections'):
+        for section in data['summarySections']:
+            if section.get('content'):
+                section['content'] = [strip_bullet_prefix(item) for item in section['content']]
+    
+    if data.get('employmentHistory'):
+        for job in data['employmentHistory']:
+            if job.get('responsibilities'):
+                job['responsibilities'] = [strip_bullet_prefix(item) for item in job['responsibilities']]
+            if job.get('subsections'):
+                for subsection in job['subsections']:
+                    if subsection.get('content'):
+                        subsection['content'] = [strip_bullet_prefix(item) for item in subsection['content']]
+            if job.get('clientProjects'):
+                for client_project in job['clientProjects']:
+                    if client_project.get('responsibilities'):
+                        client_project['responsibilities'] = [strip_bullet_prefix(item) for item in client_project['responsibilities']]
+    
+    return data
 
 async def extract_data_from_text(text: str) -> Dict[str, Any]:
     logger.info('\n=== AI PARSER: Starting OpenAI extraction with function calling ===')
@@ -195,7 +220,7 @@ async def extract_data_from_text(text: str) -> Dict[str, Any]:
         try:
             parsed_data = json.loads(tool_call_arguments)
             logger.info('✅ Function calling extraction successful')
-            return parsed_data
+            return clean_bullet_points(parsed_data)
         except json.JSONDecodeError as parse_error:
             logger.error(f'❌ JSON parsing error: {parse_error}')
             return get_default_resume_structure()
