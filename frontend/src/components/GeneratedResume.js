@@ -232,23 +232,23 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             children: [
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.degree || '' })],
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.degree || '-' })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.areaOfStudy || '' })],
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.areaOfStudy || '-' })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.school || '' })],
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.school || '-' })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.location || '' })],
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.location || '-' })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.wasAwarded ? 'Yes' : 'No' })],
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: edu.wasAwarded ? 'Yes' : 'No' || '-' })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
@@ -264,7 +264,26 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         new TableRow({
           children: [
             new TableCell({
-              columnSpan: 6,
+              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+            }),
+            new TableCell({
+              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+            }),
+            new TableCell({
+              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+            }),
+            new TableCell({
+              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+            }),
+            new TableCell({
+              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+            }),
+            new TableCell({
               verticalAlign: VerticalAlign.CENTER,
               children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
             }),
@@ -470,15 +489,15 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             children: [
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.name || '' })],
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.name || '-' })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.issuedBy || '' })],
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.issuedBy || '-' })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.dateObtained || '' })],
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, text: cert.dateObtained || '-' })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
@@ -498,7 +517,22 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         new TableRow({
           children: [
             new TableCell({
-              columnSpan: 5,
+              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+            }),
+            new TableCell({
+              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+            }),
+            new TableCell({
+              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+            }),
+            new TableCell({
+              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
+            }),
+            new TableCell({
               verticalAlign: VerticalAlign.CENTER,
               children: [new Paragraph({ alignment: AlignmentType.CENTER, text: '-' })],
             }),
@@ -1039,32 +1073,6 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                 }),
                 new TextRun({
                   text: ' ' + job.keyTechnologies,
-                  size: 22,
-                  font: "Calibri",
-                  color: '000000'
-                }),
-              ],
-            })
-          );
-        }
-        
-        // Environment
-        if (job.environment) {
-          paragraphs.push(
-            new Paragraph({
-              spacing: {
-                before: 200
-              },
-              children: [
-                new TextRun({
-                  text: 'Environment:',
-                  bold: true,
-                  size: 22,
-                  color: '000000',
-                  font: "Calibri"
-                }),
-                new TextRun({
-                  text: ' ' + job.environment,
                   size: 22,
                   font: "Calibri",
                   color: '000000'
@@ -1737,12 +1745,6 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   </p>
                 )}
                 
-                {job.environment && (
-                  <p className="mt-2">
-                    <span className="font-medium">Environment: </span>
-                    <span className="text-gray-800">{job.environment}</span>
-                  </p>
-                )}
                 
                 {/* Achievements */}
                 {job.achievements && job.achievements.length > 0 && (

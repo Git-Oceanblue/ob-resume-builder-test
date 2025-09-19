@@ -91,8 +91,7 @@ async def extract_data_from_text(text: str) -> Dict[str, Any]:
                                 "items": {"type": "string"},
                                 "description": "List of general job responsibilities that are directly under the job title, not part of any named subsection or client-specific work. Include ALL bullet points that appear before any subsection headings."
                             },
-                            "keyTechnologies": {"type": "string"},
-                            "environment": {"type": "string", "description": "Development environment if mentioned"},
+                            "keyTechnologies": {"type": "string", "description": "All technologies, skills, tools, environments for this job if mentioned"},
                             "subsections": {
                                 "type": "array",
                                 "items": {

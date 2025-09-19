@@ -255,7 +255,6 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
           subsections: [],
           achievements: [],
           keyTechnologies: '',
-          environment: '',
           workPeriod: '',
           location: ''
         }
@@ -1070,17 +1069,8 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
                     value={job.keyTechnologies || ''}
                     onChange={(e) => handleEmploymentChange(index, 'keyTechnologies', e.target.value)}
                     className="w-full px-3 py-2 border rounded-md"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Environment</label>
-                  <input
-                    type="text"
-                    value={job.environment || ''}
-                    onChange={(e) => handleEmploymentChange(index, 'environment', e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Development environment"
+                    rows="3"
+                    placeholder="All technologies, tools, frameworks, environments, platforms used in this role"
                   />
                 </div>
               </div>

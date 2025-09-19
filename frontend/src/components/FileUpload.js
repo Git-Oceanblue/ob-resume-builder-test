@@ -248,7 +248,6 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
           content: Array.isArray(subsection.content) ? subsection.content : []
         })) : [],
         keyTechnologies: job.keyTechnologies || '',
-        environment: job.environment || '',
         achievements: Array.isArray(job.achievements) ? job.achievements : [],
         additionalFields: job.additionalFields || {}
       }));
