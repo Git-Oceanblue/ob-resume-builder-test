@@ -1125,33 +1125,6 @@ const GeneratedResume = ({ resumeData, onBack }) => {
           });
         }
         
-        // Key Technologies/Skills
-        if (job.keyTechnologies) {
-          paragraphs.push(
-            new Paragraph({
-              alignment: AlignmentType.JUSTIFY,
-              spacing: {
-                before: 200
-              },
-              children: [
-                new TextRun({
-                  text: 'Technical Skills:',
-                  bold: true,
-                  size: 22,
-                  color: '000000',
-                  font: "Calibri"
-                }),
-                new TextRun({
-                  text: ' ' + job.keyTechnologies,
-                  size: 22,
-                  font: "Calibri",
-                  color: '000000'
-                }),
-              ],
-            })
-          );
-        }
-        
         // Achievements
         if (job.achievements && job.achievements.length > 0) {
           paragraphs.push(
@@ -1194,6 +1167,33 @@ const GeneratedResume = ({ resumeData, onBack }) => {
               );
             }
           });
+        }
+        
+        // Key Technologies/Skills
+        if (job.keyTechnologies) {
+          paragraphs.push(
+            new Paragraph({
+              alignment: AlignmentType.JUSTIFY,
+              spacing: {
+                before: 200
+              },
+              children: [
+                new TextRun({
+                  text: 'Technical Skills:',
+                  bold: true,
+                  size: 22,
+                  color: '000000',
+                  font: "Calibri"
+                }),
+                new TextRun({
+                  text: ' ' + job.keyTechnologies,
+                  size: 22,
+                  font: "Calibri",
+                  color: '000000'
+                }),
+              ],
+            })
+          );
         }
       });
     } else {
