@@ -962,8 +962,8 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   new TextRun({
                     text: projectTitle,
                     bold: true,
-                    size: 20,
-                    color: '0F3E78',
+                    size: 22,
+                    color: '000000',
                     font: "Calibri"
                   }),
                 ],
