@@ -7,9 +7,9 @@ import { saveAs } from 'file-saver';
 const PricingDisplay = ({ resumeData }) => {
   // Extract token stats if available
   const tokenStats = resumeData?.tokenStats;
-  
+
   if (!tokenStats) return null;
-  
+
   return (
     <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-ocean-blue rounded-xl shadow-md">
       <h3 className="text-lg font-semibold text-ocean-dark mb-4 flex items-center">
@@ -232,43 +232,43 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             children: [
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: edu.degree || '-', font: "Calibri", size: 22 })]
                 })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: edu.areaOfStudy || '-', font: "Calibri", size: 22 })]
                 })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: edu.school || '-', font: "Calibri", size: 22 })]
                 })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: edu.location || '-', font: "Calibri", size: 22 })]
                 })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: edu.wasAwarded ? 'Yes' : 'No' || '-', font: "Calibri", size: 22 })]
                 })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: edu.date || '-', font: "Calibri", size: 22 })]
                 })],
               }),
@@ -283,43 +283,43 @@ const GeneratedResume = ({ resumeData, onBack }) => {
           children: [
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
@@ -525,36 +525,36 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             children: [
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: cert.name || '-', font: "Calibri", size: 22 })]
                 })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: cert.issuedBy || '-', font: "Calibri", size: 22 })]
                 })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: cert.dateObtained || '-', font: "Calibri", size: 22 })]
                 })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: cert.certificationNumber || '-', font: "Calibri", size: 22 })]
                 })],
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({ 
-                  alignment: AlignmentType.CENTER, 
+                children: [new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [new TextRun({ text: cert.expirationDate || '-', font: "Calibri", size: 22 })]
                 })],
               }),
@@ -569,36 +569,36 @@ const GeneratedResume = ({ resumeData, onBack }) => {
           children: [
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
             new TableCell({
               verticalAlign: VerticalAlign.CENTER,
-              children: [new Paragraph({ 
-                alignment: AlignmentType.CENTER, 
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: '-', font: "Calibri", size: 22 })]
               })],
             }),
@@ -651,11 +651,11 @@ const GeneratedResume = ({ resumeData, onBack }) => {
   // Helper function to create employment history content
   const createEmploymentHistory = (resumeData) => {
     const paragraphs = [];
-    
+
     if (resumeData.employmentHistory && resumeData.employmentHistory.length > 0) {
       // Sort employment history by workPeriod if available
       const sortedEmploymentHistory = [...resumeData.employmentHistory];
-      
+
       sortedEmploymentHistory.forEach((job, index) => {
         // Add spacing before each employment history except the first one
         if (index > 0) {
@@ -665,7 +665,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             })
           );
         }
-        
+
         // Company row with date right-aligned
         paragraphs.push(
           new Table({
@@ -726,7 +726,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             ]
           })
         );
-        
+
         // Job title row with location right-aligned
         paragraphs.push(
           new Table({
@@ -787,7 +787,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             ]
           })
         );
-        
+
         if (job.project) {
           paragraphs.push(
             new Paragraph({
@@ -810,7 +810,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             })
           );
         }
-        
+
         // Project Role
         if (job.projectRole) {
           paragraphs.push(
@@ -834,7 +834,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             })
           );
         }
-        
+
         // Project Description
         if (job.projectDescription) {
           paragraphs.push(
@@ -857,7 +857,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             })
           );
         }
-        
+
         // Project Environment
         if (job.projectEnvironment) {
           paragraphs.push(
@@ -880,7 +880,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             })
           );
         }
-        
+
         // Client
         if (job.client) {
           paragraphs.push(
@@ -904,7 +904,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             })
           );
         }
-        
+
         // Customer
         if (job.customer) {
           paragraphs.push(
@@ -946,13 +946,13 @@ const GeneratedResume = ({ resumeData, onBack }) => {
               ],
             })
           );
-          
+
           job.clientProjects.forEach(clientProject => {
             // Client Project header
-            const projectTitle = clientProject.clientName && clientProject.projectName 
+            const projectTitle = clientProject.clientName && clientProject.projectName
               ? `${clientProject.clientName} - ${clientProject.projectName}`
               : clientProject.clientName || clientProject.projectName || 'Client Project';
-            
+
             paragraphs.push(
               new Paragraph({
                 spacing: {
@@ -969,7 +969,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                 ],
               })
             );
-            
+
             // Project period
             if (clientProject.period) {
               paragraphs.push(
@@ -986,7 +986,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                 })
               );
             }
-            
+
             // Project description
             if (clientProject.projectDescription) {
               paragraphs.push(
@@ -994,7 +994,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   children: [
                     new TextRun({
                       text: clientProject.projectDescription,
-                      size: 20,
+                      size: 22,
                       font: "Calibri",
                       color: '000000'
                     }),
@@ -1002,7 +1002,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                 })
               );
             }
-            
+
             // Project responsibilities
             if (clientProject.responsibilities && clientProject.responsibilities.length > 0) {
               clientProject.responsibilities.forEach(resp => {
@@ -1011,15 +1011,15 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                     new Paragraph({
                       alignment: AlignmentType.JUSTIFY,
                       bullet: {
-                        level: 1
+                        level: 0
                       },
                       indent: {
-                        left: 450
+                        left: 350
                       },
                       children: [
                         new TextRun({
                           text: resp,
-                          size: 20,
+                          size: 22,
                           font: "Calibri",
                           color: '000000'
                         }),
@@ -1031,7 +1031,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             }
           });
         }
-        
+
         // General Responsibilities
         if (job.responsibilities && job.responsibilities.length > 0 && job.responsibilities.some(r => r.trim())) {
           paragraphs.push(
@@ -1047,7 +1047,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
               ],
             })
           );
-          
+
           job.responsibilities.forEach(resp => {
             if (resp.trim()) {
               paragraphs.push(
@@ -1072,7 +1072,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             }
           });
         }
-        
+
         // Subsections
         if (job.subsections && job.subsections.length > 0) {
           job.subsections.forEach(subsection => {
@@ -1094,7 +1094,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   ],
                 })
               );
-              
+
               // Add subsection content as bullet points
               if (subsection.content && subsection.content.length > 0) {
                 subsection.content.forEach(item => {
@@ -1124,7 +1124,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             }
           });
         }
-        
+
         // Achievements
         if (job.achievements && job.achievements.length > 0) {
           paragraphs.push(
@@ -1143,7 +1143,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
               ],
             })
           );
-          
+
           job.achievements.forEach(achievement => {
             if (achievement.trim()) {
               paragraphs.push(
@@ -1168,7 +1168,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             }
           });
         }
-        
+
         // Key Technologies/Skills
         if (job.keyTechnologies) {
           paragraphs.push(
@@ -1207,14 +1207,14 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         })
       );
     }
-    
+
     return paragraphs;
   };
 
   // Helper function to create technical skills content
   const createTechnicalSkills = (resumeData) => {
     const paragraphs = [];
-    
+
     // Legacy format skills
     if (resumeData.technicalSkills && Object.keys(resumeData.technicalSkills).length > 0) {
       Object.entries(resumeData.technicalSkills).forEach(([category, skills]) => {
@@ -1239,7 +1239,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         );
       });
     }
-    
+
     // Nested skill categories
     if (resumeData.skillCategories && resumeData.skillCategories.length > 0) {
       resumeData.skillCategories.forEach(category => {
@@ -1263,9 +1263,9 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             ],
           })
         );
-        
+
         // Main skills are now included with the category name
-        
+
         // Subcategories - ensure they exist and are properly handled
         if (category.subCategories && Array.isArray(category.subCategories) && category.subCategories.length > 0) {
           category.subCategories.forEach(subCategory => {
@@ -1299,7 +1299,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         }
       });
     }
-    
+
     if (paragraphs.length === 0) {
       paragraphs.push(
         new Paragraph({
@@ -1314,16 +1314,16 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         })
       );
     }
-    
+
     return paragraphs;
   };
 
   // Helper function to handle Word document generation and download
   const handleDownloadWord = async () => {
     if (!resumeData) return;
-    
+
     setIsGenerating(true);
-    
+
     try {
       // Create a new Word document
       const doc = new Document({
@@ -1352,7 +1352,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   })
                 ]
               }),
-              
+
               // Title/Role and Requisition Number in a single row using table
               new Table({
                 width: {
@@ -1411,9 +1411,9 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                         children: [
                           new Paragraph({
                             alignment: AlignmentType.RIGHT,
-                            
+
                             children: [
-                              new TextRun({ 
+                              new TextRun({
                                 text: 'VectorVMS Requisition Number: ',
                                 bold: true,
                                 size: 28,
@@ -1424,7 +1424,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                           new Paragraph({
                             alignment: AlignmentType.LEFT,
                             indent: {
-                              left: 1200 
+                              left: 1200
                             },
                             children: [
                               new TextRun({
@@ -1440,7 +1440,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   })
                 ]
               }),
-              
+
               // Education Section
               new Paragraph({
                 spacing: {
@@ -1456,10 +1456,10 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   })
                 ]
               }),
-              
+
               // Education Table
               createEducationTable(resumeData),
-              
+
               // Certifications Section
               new Paragraph({
                 spacing: {
@@ -1475,10 +1475,10 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   })
                 ]
               }),
-              
+
               // Certifications Table
               createCertificationsTable(resumeData),
-              
+
               // Employment History Section
               new Paragraph({
                 spacing: {
@@ -1494,7 +1494,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   })
                 ]
               }),
-              
+
               // Employment History Content
               ...createEmploymentHistory(resumeData),
 
@@ -1513,7 +1513,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   })
                 ]
               }),
-              
+
               // Professional Summary Content
               ...(resumeData.professionalSummary || []).map(point => (
                 new Paragraph({
@@ -1534,50 +1534,50 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   ]
                 })
               )),
-              
-                              // Summary subsections - support both formats
-                ...(resumeData.summarySections || resumeData.subsections || []).flatMap(subsection => [
-                  // Subsection title
-                  new Paragraph({
-                    spacing: {
-                      before: 200,
-                      after: 100
-                    },
-                    children: [
-                      new TextRun({
-                        text: subsection.title || '',
-                        bold: true,
-                        size: 22,
-                        font: "Calibri",
-                        color: '000000'
-                      })
-                    ]
-                  }),
-                  // Subsection content (only if there is content)
-                  ...(subsection.content && subsection.content.length > 0 
-                    ? subsection.content.map(item => (
-                        new Paragraph({
-                          alignment: AlignmentType.JUSTIFY,
-                          bullet: {
-                            level: 0
-                          },
-                          indent: {
-                            left: 350
-                          },
-                          children: [
-                            new TextRun({
-                              text: item,
-                              size: 22,
-                              font: "Calibri",
-                              color: '000000'
-                            })
-                          ]
+
+              // Summary subsections - support both formats
+              ...(resumeData.summarySections || resumeData.subsections || []).flatMap(subsection => [
+                // Subsection title
+                new Paragraph({
+                  spacing: {
+                    before: 200,
+                    after: 100
+                  },
+                  children: [
+                    new TextRun({
+                      text: subsection.title || '',
+                      bold: true,
+                      size: 22,
+                      font: "Calibri",
+                      color: '000000'
+                    })
+                  ]
+                }),
+                // Subsection content (only if there is content)
+                ...(subsection.content && subsection.content.length > 0
+                  ? subsection.content.map(item => (
+                    new Paragraph({
+                      alignment: AlignmentType.JUSTIFY,
+                      bullet: {
+                        level: 0
+                      },
+                      indent: {
+                        left: 350
+                      },
+                      children: [
+                        new TextRun({
+                          text: item,
+                          size: 22,
+                          font: "Calibri",
+                          color: '000000'
                         })
-                      ))
-                    : []
-                  )
+                      ]
+                    })
+                  ))
+                  : []
+                )
               ]),
-              
+
               // Technical Skills Section
               new Paragraph({
                 spacing: {
@@ -1592,14 +1592,14 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   })
                 ]
               }),
-              
+
               // Technical Skills Content
               ...createTechnicalSkills(resumeData)
             ]
           }
         ]
       });
-      
+
       // Generate and save the document
       const blob = await Packer.toBlob(doc);
       saveAs(blob, `${resumeData.name || 'Resume'}.docx`);
@@ -1612,18 +1612,18 @@ const GeneratedResume = ({ resumeData, onBack }) => {
 
   return (
     <div className="max-w-4xl mx-auto animate-slide-up">
-      
+
       {/* Add PricingDisplay component */}
       <PricingDisplay resumeData={resumeData} />
-      
+
       {/* Header Section */}
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-ocean-dark mb-2">Generated Resume</h2>
       </div>
-      
+
       {/* Action Buttons */}
       <div className="flex justify-center space-x-4 mb-8">
-        <button 
+        <button
           onClick={handlePrint}
           className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg flex items-center transition-colors"
         >
@@ -1644,7 +1644,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         <header className="border-b-2 border-ocean-blue pb-6 mb-6">
           <h1 className="text-4xl font-bold text-center mb-3 text-ocean-dark">{resumeData.name || 'Full Name'}</h1>
           <p className="text-xl text-center text-ocean-blue mb-4 font-medium">{resumeData.title || 'Professional Title'}</p>
-          
+
           {resumeData.requisitionNumber && (
             <p className="text-center text-gray-600 bg-gray-50 py-2 px-4 rounded-lg inline-block">
               <span className="font-medium">Requisition Number:</span> {resumeData.requisitionNumber}
@@ -1653,12 +1653,12 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         </header>
 
         {/* Professional Summary */}
-        {(resumeData.professionalSummary && resumeData.professionalSummary.length > 0) || 
-         (resumeData.summarySections && resumeData.summarySections.length > 0) ||
-         (resumeData.subsections && resumeData.subsections.length > 0) ? (
+        {(resumeData.professionalSummary && resumeData.professionalSummary.length > 0) ||
+          (resumeData.summarySections && resumeData.summarySections.length > 0) ||
+          (resumeData.subsections && resumeData.subsections.length > 0) ? (
           <section className="mb-6">
             <h2 className="text-xl font-semibold border-b-2 border-ocean-blue pb-2 mb-4 text-ocean-dark">Professional Summary</h2>
-            
+
             {/* Main summary points */}
             {resumeData.professionalSummary && resumeData.professionalSummary.length > 0 && (
               <ul className="list-disc pl-5 space-y-1 mb-4">
@@ -1667,28 +1667,28 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                 ))}
               </ul>
             )}
-            
+
             {/* Summary subsections - support both formats */}
-            {(resumeData.summarySections || resumeData.subsections) && 
-             ((resumeData.summarySections && resumeData.summarySections.length > 0) || 
-              (resumeData.subsections && resumeData.subsections.length > 0)) && (
-              <div className="mt-4 space-y-3">
-                {(resumeData.summarySections || resumeData.subsections).map((subsection, index) => (
-                  <div key={index} className="border-l-2 border-blue-100 pl-3 py-1">
-                    {subsection.title && (
-                      <h4 className="font-medium text-gray-800">{subsection.title}</h4>
-                    )}
-                    {subsection.content && subsection.content.length > 0 ? (
-                      <ul className="list-disc pl-5 space-y-1">
-                        {subsection.content.map((item, itemIndex) => (
-                          <li key={itemIndex} className="text-gray-800">{item}</li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            )}
+            {(resumeData.summarySections || resumeData.subsections) &&
+              ((resumeData.summarySections && resumeData.summarySections.length > 0) ||
+                (resumeData.subsections && resumeData.subsections.length > 0)) && (
+                <div className="mt-4 space-y-3">
+                  {(resumeData.summarySections || resumeData.subsections).map((subsection, index) => (
+                    <div key={index} className="border-l-2 border-blue-100 pl-3 py-1">
+                      {subsection.title && (
+                        <h4 className="font-medium text-gray-800">{subsection.title}</h4>
+                      )}
+                      {subsection.content && subsection.content.length > 0 ? (
+                        <ul className="list-disc pl-5 space-y-1">
+                          {subsection.content.map((item, itemIndex) => (
+                            <li key={itemIndex} className="text-gray-800">{item}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
           </section>
         ) : null}
 
@@ -1696,7 +1696,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         {resumeData.employmentHistory && resumeData.employmentHistory.length > 0 && (
           <section className="mb-6">
             <h2 className="text-xl font-semibold border-b-2 border-ocean-blue pb-2 mb-4 text-ocean-dark">Employment History</h2>
-            
+
             {resumeData.employmentHistory.map((job, index) => (
               <div key={index} className="mb-5">
                 <div className="flex justify-between items-start">
@@ -1715,42 +1715,42 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                     <span className="text-gray-800 font-bold">{job.project}</span>
                   </p>
                 )}
-                
+
                 {job.projectRole && (
                   <p className="my-2">
                     <span className="font-medium">Project Role: </span>
                     <span className="text-gray-800 font-bold">{job.projectRole}</span>
                   </p>
                 )}
-                
+
                 {job.projectDescription && (
                   <p className="my-2">
                     <span className="font-medium">Project Description: </span>
                     <span className="text-gray-800">{job.projectDescription}</span>
                   </p>
                 )}
-                
+
                 {job.projectEnvironment && (
                   <p className="my-2">
                     <span className="font-medium">Project Environment: </span>
                     <span className="text-gray-800">{job.projectEnvironment}</span>
                   </p>
                 )}
-                
+
                 {job.client && (
                   <p className="my-2">
                     <span className="font-medium">Client: </span>
                     <span className="text-gray-800 font-bold">{job.client}</span>
                   </p>
                 )}
-                
+
                 {job.customer && (
                   <p className="my-2">
                     <span className="font-medium">Customer: </span>
                     <span className="text-gray-800 font-bold">{job.customer}</span>
                   </p>
                 )}
-                
+
                 {job.description && (
                   <p className="my-2 text-gray-800">{job.description}</p>
                 )}
@@ -1762,7 +1762,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                     {job.clientProjects.map((clientProject, projIndex) => (
                       <div key={projIndex} className="border-l-2 border-blue-200 pl-4 mb-3 bg-blue-50 p-3 rounded">
                         <h5 className="font-medium text-blue-800">
-                          {clientProject.clientName && clientProject.projectName 
+                          {clientProject.clientName && clientProject.projectName
                             ? `${clientProject.clientName} - ${clientProject.projectName}`
                             : clientProject.clientName || clientProject.projectName || `Project ${projIndex + 1}`}
                         </h5>
@@ -1794,7 +1794,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                     </ul>
                   </div>
                 )}
-                
+
                 {/* Subsections */}
                 {job.subsections && job.subsections.length > 0 && job.subsections.map((subsection, subIndex) => (
                   <div key={subIndex} className="mt-3">
@@ -1810,15 +1810,15 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                     )}
                   </div>
                 ))}
-                
+
                 {job.keyTechnologies && (
                   <p className="mt-2">
                     <span className="font-medium">Key Technologies/Skills: </span>
                     <span className="text-gray-800">{job.keyTechnologies}</span>
                   </p>
                 )}
-                
-                
+
+
                 {/* Achievements */}
                 {job.achievements && job.achievements.length > 0 && (
                   <div className="mt-3">
@@ -1839,7 +1839,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         {resumeData.education && resumeData.education.length > 0 && (
           <section className="mb-6">
             <h2 className="text-xl font-semibold border-b pb-2 mb-3">Education</h2>
-            
+
             {resumeData.education.map((edu, index) => (
               <div key={index} className="mb-3">
                 <div className="flex justify-between items-start">
@@ -1862,7 +1862,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
         {resumeData.certifications && resumeData.certifications.length > 0 && (
           <section className="mb-6">
             <h2 className="text-xl font-semibold border-b pb-2 mb-3">Certifications</h2>
-            
+
             {resumeData.certifications.map((cert, index) => (
               <div key={index} className="mb-3">
                 <h3 className="font-bold">{cert.name || 'Certification'}</h3>
@@ -1883,10 +1883,10 @@ const GeneratedResume = ({ resumeData, onBack }) => {
 
         {/* Technical Skills */}
         {(resumeData.technicalSkills && Object.keys(resumeData.technicalSkills).length > 0) ||
-         (resumeData.skillCategories && resumeData.skillCategories.length > 0) ? (
+          (resumeData.skillCategories && resumeData.skillCategories.length > 0) ? (
           <section className="mb-6">
             <h2 className="text-xl font-semibold border-b pb-2 mb-3">Technical Skills</h2>
-            
+
             {/* Legacy format skills */}
             {resumeData.technicalSkills && Object.keys(resumeData.technicalSkills).length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1898,21 +1898,21 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                 ))}
               </div>
             )}
-            
+
             {/* Nested skill categories */}
             {resumeData.skillCategories && resumeData.skillCategories.length > 0 && (
               <div className="space-y-5">
                 {resumeData.skillCategories.map((category, index) => (
                   <div key={index} className="border-l-4 border-blue-200 pl-4 py-2">
                     <h3 className="font-bold text-lg text-blue-800">{category.categoryName || 'Category'}</h3>
-                    
+
                     {/* Main skills */}
                     {category.skills && category.skills.length > 0 && (
                       <p className="text-gray-800 mb-3 mt-1">
                         {Array.isArray(category.skills) ? category.skills.join(', ') : category.skills}
                       </p>
                     )}
-                    
+
                     {/* Subcategories */}
                     {category.subCategories && Array.isArray(category.subCategories) && category.subCategories.length > 0 && (
                       <div className="ml-4 mt-3 space-y-3">
@@ -1921,10 +1921,10 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                             <h4 className="font-medium text-gray-700">{subCategory.name || 'Subcategory'}</h4>
                             {subCategory.skills && subCategory.skills.length > 0 && (
                               <ul className="list-disc pl-5 space-y-1 mt-1">
-                                {Array.isArray(subCategory.skills) ? 
+                                {Array.isArray(subCategory.skills) ?
                                   subCategory.skills.map((skill, skillIndex) => (
                                     <li key={skillIndex} className="text-gray-800">{skill}</li>
-                                  )) : 
+                                  )) :
                                   <li className="text-gray-800">{subCategory.skills}</li>
                                 }
                               </ul>
