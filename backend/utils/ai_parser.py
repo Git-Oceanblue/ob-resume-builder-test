@@ -89,8 +89,16 @@ async def extract_data_from_text(text: str) -> Dict[str, Any]:
                         "properties": {
                             "companyName": {"type": "string", "description": "Name of the company"},
                             "roleName": {"type": "string", "description": "Job title or role"},
-                            "workPeriod": {"type": "string", "description": "Period of employment in format **Jan 2020 - Dec 2022**. For current/present positions use **Till Date**"},
-                            "location": {"type": "string", "description": "Job location"},
+                            "workPeriod": {
+                                "type": "string", 
+                                "pattern": "^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4}$|^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} - Till Date$",
+                                "description": "MUST be exact format: MMM YYYY - MMM YYYY (e.g., Jun 2024 - Sep 2025) or MMM YYYY - Till Date for current positions"
+                            },
+                            "location": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z\\s]+, [A-Za-z\\s]+$",
+                                "description": "MUST be exact format: City, State/Country (e.g., Hyderabad, India or Columbia, Ohio)"
+                            },
                             "project": {"type": "string", "description": "Project name ONLY if explicitly mentioned in resume text"},
                             "client": {"type": "string", "description": "Client name ONLY if explicitly mentioned separately from company in resume text"},
                             "customer": {"type": "string", "description": "Customer name ONLY if explicitly mentioned in resume text"},
@@ -143,8 +151,12 @@ async def extract_data_from_text(text: str) -> Dict[str, Any]:
                         "properties": {
                             "degree": {"type": "string", "description": "Degree obtained or pursued"},
                             "areaOfStudy": {"type": "string", "description": "Field of study"},
-                            "school": {"type": "string", "description": "Educational institution name"},
-                            "location": {"type": "string", "description": "Location of the institution"},
+                            "school": {"type": "string", "description": "Educational institution name ONLY - exclude location information"},
+                            "location": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z\\s]+, [A-Za-z\\s]+$",
+                                "description": "MUST be exact format: City, State/Country (e.g., Hyderabad, India or Columbia, Ohio) - extract separately even if combined with school name"
+                            },
                             "date": {"type": "string", "description": "Date of graduation or period of study"},
                             "wasAwarded": {"type": "boolean", "description": "Whether the degree was awarded"}
                         }

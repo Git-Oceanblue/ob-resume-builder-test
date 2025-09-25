@@ -1501,8 +1501,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
               // Professional Summary Section
               new Paragraph({
                 spacing: {
-                  before: 400,
-                  after: 200
+                  before: 400
                 },
                 children: [
                   new TextRun({
@@ -1540,8 +1539,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                 // Subsection title
                 new Paragraph({
                   spacing: {
-                    before: 200,
-                    after: 100
+                    before: 100
                   },
                   children: [
                     new TextRun({
