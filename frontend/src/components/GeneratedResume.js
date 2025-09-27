@@ -5,7 +5,7 @@ import { saveAs } from 'file-saver';
 
 // PricingDisplay component to show token usage and cost
 const PricingDisplay = ({ resumeData }) => {
-  // Extract token stats if available
+
   const tokenStats = resumeData?.tokenStats;
 
   if (!tokenStats) return null;

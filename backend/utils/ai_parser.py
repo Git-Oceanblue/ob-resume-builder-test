@@ -97,7 +97,7 @@ async def extract_data_from_text(text: str) -> Dict[str, Any]:
                             "location": {
                                 "type": "string",
                                 "pattern": "^[A-Za-z\\s]+, [A-Za-z\\s]+$",
-                                "description": "MUST be exact format: City, State/Country (e.g., Hyderabad, India or Columbia, Ohio)"
+                                "description": "MUST be exact format: City, State/Country (e.g., Hyderabad, India or Dallas, TX). For US locations, use state abbreviations (TX, CA, NY, etc.)"
                             },
                             "project": {"type": "string", "description": "Project name ONLY if explicitly mentioned in resume text"},
                             "client": {"type": "string", "description": "Client name ONLY if explicitly mentioned separately from company in resume text"},
@@ -155,7 +155,7 @@ async def extract_data_from_text(text: str) -> Dict[str, Any]:
                             "location": {
                                 "type": "string",
                                 "pattern": "^[A-Za-z\\s]+, [A-Za-z\\s]+$",
-                                "description": "MUST be exact format: City, State/Country (e.g., Hyderabad, India or Columbia, Ohio) - extract separately even if combined with school name"
+                                "description": "MUST be exact format: City, State/Country (e.g., Hyderabad, India or Austin, TX). For US locations, use state abbreviations (TX, CA, NY, etc.). Extract separately even if combined with school name."
                             },
                             "date": {"type": "string", "description": "Date of graduation or period of study"},
                             "wasAwarded": {"type": "boolean", "description": "Whether the degree was awarded"}
