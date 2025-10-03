@@ -93,13 +93,23 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
       formData.append('file', file);
       
       // 🔥 INITIATE STREAMING UPLOAD TO NEW ENDPOINT
+      console.log('🚀 Starting fetch to:', `${API_BASE_URL}api/stream-resume-processing`);
+      
       const response = await fetch(`${API_BASE_URL}api/stream-resume-processing`, {
         method: 'POST',
         body: formData,
+        headers: {
+          // Don't set Content-Type for FormData, let browser set it
+        }
       });
       
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', [...response.headers.entries()]);
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Response error:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
       // 🌊 SETUP SERVER-SENT EVENTS READER
@@ -107,15 +117,20 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
       const decoder = new TextDecoder();
       let buffer = '';
       
+      console.log('📖 Starting to read stream...');
+      
       while (true) {
         const { value, done } = await reader.read();
         
         if (done) {
+          console.log('✅ Stream reading completed');
           break;
         }
         
         // Decode the chunk and add to buffer
-        buffer += decoder.decode(value, { stream: true });
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        console.log('📦 Received chunk:', chunk.substring(0, 100) + '...');
         
         // Process complete events
         const events = buffer.split('\n\n');
@@ -124,10 +139,16 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
         for (const event of events) {
           if (event.startsWith('data: ')) {
             try {
-              const data = JSON.parse(event.slice(6));
+              const eventData = event.slice(6);
+              if (eventData === '[DONE]') {
+                console.log('🏁 Received DONE signal');
+                continue;
+              }
+              const data = JSON.parse(eventData);
+              console.log('📨 Parsed event:', data);
               handleStreamingEvent(data);
             } catch (parseError) {
-              // Silently ignore parse errors
+              console.error('❌ Parse error:', parseError, 'Event:', event);
             }
           }
         }
@@ -146,6 +167,11 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
     console.log('📡 Streaming Event:', data.type, data.progress, data.message);
     
     switch (data.type) {
+      case 'connection':
+        setStreamingProgress(data.progress || 5);
+        setCurrentMessage(data.message || 'Connected to server');
+        break;
+        
       case 'progress':
         setStreamingProgress(data.progress || 0);
         setCurrentMessage(data.message || '');

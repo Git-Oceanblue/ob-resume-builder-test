@@ -25,6 +25,14 @@ async def stream_resume_processing(extracted_text: str) -> AsyncGenerator[Dict[s
     logger.info('\n=== STREAMING AI PARSER: Starting multi-agent resume processing ===')
     
     try:
+        # Send initial connection test
+        yield {
+            'type': 'connection',
+            'message': 'Connected to resume processing service',
+            'progress': 5,
+            'timestamp': datetime.now().isoformat()
+        }
+        
         yield {
             'type': 'progress',
             'message': 'Analyzing resume structure...',

@@ -4,7 +4,6 @@ FastAPI Resume Builder Backend - AWS Lambda Version
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
 import json
@@ -21,14 +20,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Resume Builder API", version="1.0.0")
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your frontend domain
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Note: CORS is handled by AWS Lambda Function URLs automatically
 
 @app.get("/")
 async def root():
