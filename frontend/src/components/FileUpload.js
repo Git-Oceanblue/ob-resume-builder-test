@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { flushSync } from 'react-dom';
+import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FiUpload, FiFileText, FiAlertCircle, FiCheckCircle, FiLoader, FiFile } from 'react-icons/fi';
+import { FiUpload, FiFileText, FiAlertCircle, FiLoader, FiFile } from 'react-icons/fi';
 
 // API base URL - Use environment variable for production
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -10,22 +9,8 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
   
-  // 🚀 STREAMING STATE MANAGEMENT
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamingProgress, setStreamingProgress] = useState(0);
-  const [currentMessage, setCurrentMessage] = useState('');
-  const [processingStartTime, setProcessingStartTime] = useState(null);
-  const [detectedSections, setDetectedSections] = useState([]);
-  const [currentAgent, setCurrentAgent] = useState('');
-
-  // Debug: Log progress changes
-  useEffect(() => {
-    console.log('📊 Progress state changed to:', streamingProgress);
-  }, [streamingProgress]);
-
-  useEffect(() => {
-    console.log('💬 Message state changed to:', currentMessage);
-  }, [currentMessage]);
+  // Simple loading state
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Handle file drop using react-dropzone
   const onDrop = useCallback((acceptedFiles) => {
@@ -87,170 +72,75 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
       return;
     }
     
-    // Reset streaming state
-    setIsStreaming(true);
+    // Reset state
+    setIsProcessing(true);
     setLoading(true);
     setError('');
-    setStreamingProgress(0);
-    setCurrentMessage('');
-    setDetectedSections([]);
-    setCurrentAgent('');
-    setProcessingStartTime(Date.now());
     
     try {
       // Create form data for file upload
       const formData = new FormData();
       formData.append('file', file);
       
-      // 🔥 INITIATE STREAMING UPLOAD TO NEW ENDPOINT
-      console.log('🚀 Starting fetch to:', `${API_BASE_URL}api/stream-resume-processing`);
-      
+      // Simple fetch to process resume
       const response = await fetch(`${API_BASE_URL}api/stream-resume-processing`, {
         method: 'POST',
         body: formData,
-        headers: {
-          // Don't set Content-Type for FormData, let browser set it
-        }
       });
       
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', [...response.headers.entries()]);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Response error:', errorText);
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      // 🌊 SETUP SERVER-SENT EVENTS READER
+      // Read the stream for final result only
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       
-      console.log('📖 Starting to read stream...');
-      
       while (true) {
         const { value, done } = await reader.read();
         
-        if (done) {
-          console.log('✅ Stream reading completed');
-          break;
-        }
+        if (done) break;
         
-        // Decode the chunk and add to buffer
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
-        console.log('📦 Received chunk:', chunk.substring(0, 100) + '...');
         
-        // Process complete events
         const events = buffer.split('\n\n');
-        buffer = events.pop(); // Keep incomplete event in buffer
+        buffer = events.pop();
         
         for (const event of events) {
           if (event.startsWith('data: ')) {
             try {
               const eventData = event.slice(6);
-              if (eventData === '[DONE]') {
-                console.log('🏁 Received DONE signal');
-                continue;
-              }
-              const data = JSON.parse(eventData);
-              console.log('📨 Parsed event:', data);
+              if (eventData === '[DONE]') continue;
               
-              // Force immediate UI update using multiple approaches
-              requestAnimationFrame(() => {
-                setTimeout(() => {
-                  handleStreamingEvent(data);
-                }, 0);
-              });
+              const data = JSON.parse(eventData);
+              
+              // Only handle final data and errors
+              if (data.type === 'final_data') {
+                const sanitizedData = sanitizeResumeData(data.data);
+                onResumeDataExtracted(sanitizedData);
+                return;
+              } else if (data.type === 'error') {
+                setError(data.message || 'Processing error');
+                return;
+              }
             } catch (parseError) {
-              console.error('❌ Parse error:', parseError, 'Event:', event);
+              // Ignore parse errors
             }
           }
         }
       }
       
-    } catch (streamingError) {
-      setError(`Streaming failed: ${streamingError.message}`);
+    } catch (processingError) {
+      setError(`Processing failed: ${processingError.message}`);
     } finally {
-      setIsStreaming(false);
+      setIsProcessing(false);
       setLoading(false);
     }
   };
   
-  // 📊 HANDLE INDIVIDUAL STREAMING EVENTS
-  const handleStreamingEvent = (data) => {
-    console.log('📡 Streaming Event:', data.type, data.progress, data.message);
-    
-    // Use flushSync to force immediate React updates for real-time progress
-    flushSync(() => {
-      switch (data.type) {
-        case 'connection':
-          console.log('🔄 Setting progress to:', data.progress || 5);
-          setStreamingProgress(data.progress || 5);
-          setCurrentMessage(data.message || 'Connected to server');
-          break;
-          
-        case 'progress':
-          console.log('🔄 Setting progress to:', data.progress || 0);
-          setStreamingProgress(data.progress || 0);
-          setCurrentMessage(data.message || '');
-          break;
-          
-        case 'sections_detected':
-          setStreamingProgress(data.progress || 20);
-          setCurrentMessage(data.message || '');
-          if (data.sections) {
-            setDetectedSections(data.sections);
-          }
-          break;
-          
-        case 'processing_start':
-          setStreamingProgress(data.progress || 30);
-          setCurrentMessage(data.message || '');
-          break;
-          
-        case 'agent_processing':
-          setStreamingProgress(data.progress || 40);
-          setCurrentMessage(data.message || '');
-          if (data.current_agent) {
-            setCurrentAgent(data.current_agent);
-          }
-          break;
-          
-        case 'processing_strategy':
-          setStreamingProgress(data.progress || 15);
-          setCurrentMessage(data.message || '');
-          break;
-          
-        case 'complete':
-          setStreamingProgress(100);
-          setCurrentMessage(data.message || 'Processing complete! 🎉');
-          setCurrentAgent('');
-          break;
-          
-        case 'final_data':
-          setStreamingProgress(100);
-          setCurrentMessage('Processing complete! 🎉');
-          setCurrentAgent('');
-          
-          // Validate and sanitize final data before passing to parent
-          if (data.data) {
-            const sanitizedData = sanitizeResumeData(data.data);
-            onResumeDataExtracted(sanitizedData);
-          }
-          break;
-          
-        case 'error':
-          setError(data.message || 'Unknown streaming error');
-          break;
-          
-        default:
-          // Log unknown events for debugging
-          console.log('🔍 Unknown event type:', data.type, data);
-      }
-    });
-  };
+
   
   // 🔧 DATA SANITIZATION FUNCTION
   const sanitizeResumeData = (data) => {
@@ -444,68 +334,16 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
         </div>
       )}
       
-      {/* Streaming Processing Interface */}
-      {isStreaming && (
+      {/* Simple Loading Interface */}
+      {isProcessing && (
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-ocean-blue rounded-2xl p-8 mb-8 shadow-xl animate-fade-in">
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold text-ocean-dark mb-2">⚡ AI Processing in Progress</h3>
-            <p className="text-ocean-blue font-medium">{currentMessage}</p>
-            <p className="text-sm text-gray-600 mt-2">Debug: Progress = {streamingProgress}%</p>
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <FiLoader className="animate-spin text-4xl text-ocean-blue mr-4" />
+              <h3 className="text-2xl font-bold text-ocean-dark">Processing Resume...</h3>
+            </div>
+            <p className="text-ocean-blue font-medium">Please wait while we analyze your resume</p>
           </div>
-          
-          {/* Enhanced Progress Bar */}
-          <div className="relative mb-6">
-            <div className="flex justify-between text-sm text-ocean-dark mb-2 font-medium">
-              <span>Progress</span>
-              <span>{streamingProgress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-ocean-blue to-blue-400 h-4 rounded-full transition-all duration-700 ease-out relative"
-                style={{ width: `${streamingProgress}%` }}
-              >
-                <div className="absolute inset-0 bg-white bg-opacity-30 animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-          
-
-          
-          {/* Detected Sections */}
-          {detectedSections.length > 0 && (
-            <div className="mb-6">
-              <h4 className="text-lg font-semibold text-ocean-dark mb-3">📋 Resume Sections Found:</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {detectedSections.map((section, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center px-4 py-3 rounded-lg bg-blue-50 border border-blue-200 text-sm font-medium text-ocean-dark"
-                  >
-                    <span className="capitalize">{section}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Current Processing Agent */}
-          {currentAgent && (
-            <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
-              <div className="flex items-center">
-                <FiLoader className="animate-spin mr-3 text-green-600" />
-                <span className="text-green-800 font-medium">
-                  Currently processing: <span className="capitalize font-bold">{currentAgent}</span> section
-                </span>
-              </div>
-            </div>
-          )}
-          
-          {/* Processing Time */}
-          {processingStartTime && (
-            <div className="text-center text-sm text-ocean-blue font-medium">
-              ⏱️ Processing for {((Date.now() - processingStartTime) / 1000).toFixed(1)}s
-            </div>
-          )}
         </div>
       )}
       
@@ -513,17 +351,17 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
       <div className="flex justify-center">
         <button 
           onClick={handleStreamingSubmit}
-          disabled={!file || isStreaming}
+          disabled={!file || isProcessing}
           className={`px-8 py-4 rounded-xl text-white font-semibold text-lg flex items-center transition-all duration-300 transform hover:scale-105 ${
-            file && !isStreaming 
+            file && !isProcessing 
               ? 'bg-gradient-to-r from-ocean-blue to-blue-500 hover:from-blue-600 hover:to-blue-700 shadow-lg' 
               : 'bg-gray-400 cursor-not-allowed'
           }`}
         >
-          {isStreaming ? (
+          {isProcessing ? (
             <>
               <FiLoader className="animate-spin mr-3 text-xl" />
-              Processing Resume...
+              Processing...
             </>
           ) : (
             <>

@@ -217,100 +217,39 @@ class MultiAgentResumeProcessor:
         model: str = 'gpt-4o-mini'
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Process resume using multiple specialized agents in parallel with intelligent chunking
-        
-        Args:
-            raw_text: Complete resume text
-            model: OpenAI model to use
-            
-        Yields:
-            Streaming updates with progress and results
+        Process resume using multiple specialized agents - simple version
         """
-        logger.info("🚀 Multi-Agent Resume Processing: Starting parallel extraction...")
+        logger.info("Starting resume processing...")
         
-        # 🔥 Chunk the resume first
-        yield {
-            'type': 'progress',
-            'message': 'Analyzing resume structure...',
-            'progress': 10,
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        # Small delay to ensure event is processed
-        await asyncio.sleep(0.2)
-        
-        from .chunk_resume import chunk_resume_from_bold_headings
-        sections = chunk_resume_from_bold_headings(raw_text)
-        
-        # Check if chunking was successful
-        if 'error' in sections:
-            logger.warning(f"⚠️ Chunking failed: {sections['error']} - Using full resume for all agents")
-            sections = {}
-        
-        logger.info(f"📊 Chunked sections available: {list(sections.keys())}")
-        
-        yield {
-            'type': 'sections_detected',
-            'message': f'Found {len(sections)} resume sections',
-            'progress': 20,
-            'sections': list(sections.keys()),
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        # Small delay to ensure event is processed
-        await asyncio.sleep(0.2)
-        
-        # Create all agents
-        agents = [
-            ResumeAgent(self.client, AgentType.HEADER),
-            ResumeAgent(self.client, AgentType.SUMMARY),
-            ResumeAgent(self.client, AgentType.EXPERIENCE),
-            ResumeAgent(self.client, AgentType.EDUCATION),
-            ResumeAgent(self.client, AgentType.SKILLS),
-            ResumeAgent(self.client, AgentType.CERTIFICATIONS)
-        ]
-        
-        # 🎯 Prepare intelligent inputs for each agent
-        agent_inputs = self._prepare_agent_inputs(agents, sections, raw_text)
-        
-        yield {
-            'type': 'processing_start',
-            'message': 'Starting AI processing of resume sections...',
-            'progress': 30,
-            'agents': [agent.agent_type.value for agent in agents],
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        # Small delay before starting agent processing
-        await asyncio.sleep(0.2)
-        
-        # Process all agents in parallel with intelligent inputs
         try:
-            # Start processing with progress updates
-            agent_tasks = []
-            for i, agent in enumerate(agents):
-                progress = 35 + (i * 5)  # 35, 40, 45, 50, 55, 60
-                yield {
-                    'type': 'agent_processing',
-                    'message': f'Processing {agent.agent_type.value} section...',
-                    'progress': progress,
-                    'current_agent': agent.agent_type.value,
-                    'timestamp': datetime.now().isoformat()
-                }
-                # Small delay to ensure events are processed separately
-                import asyncio
-                await asyncio.sleep(0.1)
-                agent_tasks.append(agent.process(agent_inputs['inputs'][agent.agent_type], model))
+            # Chunk the resume
+            from .chunk_resume import chunk_resume_from_bold_headings
+            sections = chunk_resume_from_bold_headings(raw_text)
             
-            # Wait for all agents to complete
+            # Check if chunking was successful
+            if 'error' in sections:
+                logger.warning(f"Chunking failed: {sections['error']} - Using full resume for all agents")
+                sections = {}
+            
+            # Create all agents
+            agents = [
+                ResumeAgent(self.client, AgentType.HEADER),
+                ResumeAgent(self.client, AgentType.SUMMARY),
+                ResumeAgent(self.client, AgentType.EXPERIENCE),
+                ResumeAgent(self.client, AgentType.EDUCATION),
+                ResumeAgent(self.client, AgentType.SKILLS),
+                ResumeAgent(self.client, AgentType.CERTIFICATIONS)
+            ]
+            
+            # Prepare intelligent inputs for each agent
+            agent_inputs = self._prepare_agent_inputs(agents, sections, raw_text)
+            
+            # Process all agents in parallel
+            agent_tasks = [
+                agent.process(agent_inputs['inputs'][agent.agent_type], model) 
+                for agent in agents
+            ]
             results = await asyncio.gather(*agent_tasks, return_exceptions=True)
-            
-            yield {
-                'type': 'progress',
-                'message': 'All sections processed. Combining results...',
-                'progress': 80,
-                'timestamp': datetime.now().isoformat()
-            }
             
             # Process results
             successful_results = []
@@ -330,23 +269,22 @@ class MultiAgentResumeProcessor:
             # Combine results into final structure
             combined_data = self._combine_agent_results(successful_results)
             
-            # Report any failures (but don't yield a separate event)
+            # Report any failures
             if failed_agents:
                 logger.warning(f"Some agents failed: {failed_agents}")
             
+            # Only yield final result
             yield {
                 'type': 'final_data',
                 'data': combined_data,
-                'message': 'Resume processing completed successfully!',
-                'progress': 100,
                 'timestamp': datetime.now().isoformat()
             }
             
         except Exception as e:
-            logger.error(f"❌ Multi-agent processing failed: {e}")
+            logger.error(f"Resume processing failed: {e}")
             yield {
                 'type': 'error',
-                'message': f'Multi-agent processing failed: {str(e)}',
+                'message': f'Resume processing failed: {str(e)}',
                 'timestamp': datetime.now().isoformat()
             }
     
