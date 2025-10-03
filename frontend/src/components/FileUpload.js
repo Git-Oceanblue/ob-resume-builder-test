@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FiUpload, FiFileText, FiAlertCircle, FiCheckCircle, FiLoader, FiFile } from 'react-icons/fi';
 
@@ -16,6 +16,15 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
   const [processingStartTime, setProcessingStartTime] = useState(null);
   const [detectedSections, setDetectedSections] = useState([]);
   const [currentAgent, setCurrentAgent] = useState('');
+
+  // Debug: Log progress changes
+  useEffect(() => {
+    console.log('📊 Progress state changed to:', streamingProgress);
+  }, [streamingProgress]);
+
+  useEffect(() => {
+    console.log('💬 Message state changed to:', currentMessage);
+  }, [currentMessage]);
 
   // Handle file drop using react-dropzone
   const onDrop = useCallback((acceptedFiles) => {
@@ -168,11 +177,13 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
     
     switch (data.type) {
       case 'connection':
+        console.log('🔄 Setting progress to:', data.progress || 5);
         setStreamingProgress(data.progress || 5);
         setCurrentMessage(data.message || 'Connected to server');
         break;
         
       case 'progress':
+        console.log('🔄 Setting progress to:', data.progress || 0);
         setStreamingProgress(data.progress || 0);
         setCurrentMessage(data.message || '');
         break;
@@ -196,6 +207,17 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
         if (data.current_agent) {
           setCurrentAgent(data.current_agent);
         }
+        break;
+        
+      case 'processing_strategy':
+        setStreamingProgress(data.progress || 15);
+        setCurrentMessage(data.message || '');
+        break;
+        
+      case 'complete':
+        setStreamingProgress(100);
+        setCurrentMessage(data.message || 'Processing complete! 🎉');
+        setCurrentAgent('');
         break;
         
       case 'final_data':
@@ -418,6 +440,7 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
           <div className="text-center mb-6">
             <h3 className="text-2xl font-bold text-ocean-dark mb-2">⚡ AI Processing in Progress</h3>
             <p className="text-ocean-blue font-medium">{currentMessage}</p>
+            <p className="text-sm text-gray-600 mt-2">Debug: Progress = {streamingProgress}%</p>
           </div>
           
           {/* Enhanced Progress Bar */}

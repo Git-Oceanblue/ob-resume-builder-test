@@ -43,13 +43,6 @@ async def stream_resume_processing(extracted_text: str) -> AsyncGenerator[Dict[s
         sections = chunk_resume_from_bold_headings(extracted_text)
         logger.info(f'Sections detected: {list(sections.keys())}')
 
-        yield {
-            'type': 'processing_strategy',
-            'message': 'Initializing multi-agent processing system...',
-            'progress': 15,
-            'timestamp': datetime.now().isoformat()
-        }
-
         # Use multi-agent processing
         from .resume_agents import MultiAgentResumeProcessor
         
@@ -61,12 +54,6 @@ async def stream_resume_processing(extracted_text: str) -> AsyncGenerator[Dict[s
             
             # If we get final data, we're done
             if update.get('type') == 'final_data':
-                yield {
-                    'type': 'complete',
-                    'message': 'Multi-agent processing completed successfully! 🎉',
-                    'progress': 100,
-                    'timestamp': datetime.now().isoformat()
-                }
                 return
 
     except Exception as error:
