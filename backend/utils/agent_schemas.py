@@ -138,7 +138,7 @@ class ResumeAgentSchemas:
         """Schema for extracting education and academic background"""
         return {
             "name": "extract_education_history",
-            "description": "Extract complete education history and academic qualifications",
+            "description": "Extract complete education history and academic qualifications. CRITICAL: Sort education entries in DESCENDING order by degree level (highest degree first).",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -147,7 +147,10 @@ class ResumeAgentSchemas:
                         "items": {
                             "type": "object",
                             "properties": {
-                                "degree": {"type": "string", "description": "Degree obtained or pursued"},
+                                "degree": {
+                                    "type": "string", 
+                                    "description": "Degree obtained or pursued exactly as written in resume. Keep degree names as abbreviations like BTech, MTech, BE, ME, MS, BS, PhD, MBA, JD, etc. Do not use full degree names."
+                                },
                                 "areaOfStudy": {"type": "string", "description": "Field of study or major"},
                                 "school": {"type": "string", "description": "Educational institution name ONLY - exclude location information"},
                                 "location": {
@@ -159,7 +162,7 @@ class ResumeAgentSchemas:
                                 "wasAwarded": {"type": "boolean", "description": "Whether the degree was awarded it must be always 'yes', unless it is mentioned as 'no'"}
                             }
                         },
-                        "description": "Complete education history with all details preserved exactly as written"
+                        "description": "CRITICAL SORTING REQUIREMENT: Education entries MUST be sorted in DESCENDING order by degree level (highest degree first). Degree hierarchy: PhD/JD (highest) → Masters (MS/MA/MBA/MTech/ME) → Bachelors (BS/BA/BTech/BE) → Associates (AA/AS) (lowest). If multiple degrees of same level, sort by date (most recent first)."
                     }
                 },
                 "required": ["education"]

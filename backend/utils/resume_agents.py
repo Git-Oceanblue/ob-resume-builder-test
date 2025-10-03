@@ -188,6 +188,7 @@ CRITICAL PROJECT EXTRACTION RULES:
                         if client_project.get('responsibilities'):
                             client_project['responsibilities'] = [strip_bullet_prefix(item) for item in client_project['responsibilities']]
         
+        
         return data
     
     def _create_error_result(self, start_time: datetime, error_message: str) -> AgentResult:
