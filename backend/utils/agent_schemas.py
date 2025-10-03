@@ -86,7 +86,7 @@ class ResumeAgentSchemas:
                                 "workPeriod": {
                                     "type": "string",
                                     "pattern": "^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4}$|^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} - Till Date$",
-                                    "description": "MUST be exact format: MMM YYYY - MMM YYYY (e.g., Jun 2024 - Sep 2025) or MMM YYYY - Till Date for current positions"
+                                    "description": "MUST be exact format: MMM YYYY - MMM YYYY (e.g., Jun 2024 - Sep 2025) or MMM YYYY - Till Date for current positions. Use 'Till Date' (not 'current' or 'present') for ongoing employment."
                                 },
                                 "location": {
                                     "type": "string",
@@ -105,7 +105,7 @@ class ResumeAgentSchemas:
                                             "period": {"type": "string", "description": "Time period for this project, should match or be within the overall workPeriod of the job"}
                                         }
                                     },
-                                    "description": "CRITICAL: Only include if specific projects are explicitly mentioned. Format project names as 'Project N: ProjectTitle/ Role' in descending order with most recent project having highest number."
+                                    "description": "CRITICAL: ONLY include this field if the resume explicitly mentions specific named projects for this job. If no projects are mentioned, return an empty array []. DO NOT create or invent projects. Look for clear project names, project titles, or project-specific sections in that specific job entry."
                                 },
                                 "responsibilities": {
                                     "type": "array",

@@ -68,12 +68,18 @@ CRITICAL INSTRUCTIONS:
 2. Preserve ALL content exactly as written - no summarization
 3. Maintain original structure and formatting
 4. If the section doesn't exist, return empty arrays/objects
-5. Never invent or hallucinate information"""
+5. Never invent or hallucinate information
+6. PROJECTS RULE: Only include projects if they are explicitly mentioned in the resume text. If no projects are mentioned for a job, return empty projects array."""
 
         section_specific = {
             AgentType.HEADER: "Focus ONLY on personal information: name, title, contact details, requisition numbers.",
             AgentType.SUMMARY: "Extract ONLY professional summary, career overview, and profile sections. Include ALL bullet points and paragraphs.",
-            AgentType.EXPERIENCE: "Extract ONLY employment history and work experience. Include ALL jobs with complete details. Missing any job is unacceptable.",
+            AgentType.EXPERIENCE: """Extract ONLY employment history and work experience. Include ALL jobs with complete details. Missing any job is unacceptable. 
+
+CRITICAL PROJECT EXTRACTION RULES:
+- ONLY include 'projects' if explicitly mentioned specific named projects, project titles, or project-specific work for that job, if it is outside that particular job entry dont add.
+- If a job only lists general responsibilities without mentioning specific projects, return projects as empty array []
+""",
             AgentType.EDUCATION: "Extract ONLY education, academic background, and degrees. Include ALL educational entries.",
             AgentType.SKILLS: "Extract ONLY technical skills, competencies, and skill categories. Preserve exact categorization.",
             AgentType.CERTIFICATIONS: "Extract ONLY certifications, licenses, and professional credentials. Only include explicitly mentioned certifications."
