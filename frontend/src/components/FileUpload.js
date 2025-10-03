@@ -229,27 +229,18 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
         roleName: job.roleName || '',
         workPeriod: job.workPeriod || '',
         location: job.location || '',
-        project: job.project || '',
-        customer: job.customer || '',
-        projectRole: job.projectRole || '',
-        projectDescription: job.projectDescription || '',
-        projectEnvironment: job.projectEnvironment || '',
         responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities : (job.responsibilities ? [job.responsibilities] : []),
-        client: job.client || '',
-        clientProjects: Array.isArray(job.clientProjects) ? job.clientProjects.map(clientProject => ({
-          clientName: clientProject.clientName || '',
-          projectName: clientProject.projectName || '',
-          projectDescription: clientProject.projectDescription || '',
-          responsibilities: Array.isArray(clientProject.responsibilities) ? clientProject.responsibilities : [],
-          period: clientProject.period || ''
+        projects: Array.isArray(job.projects) ? job.projects.map(project => ({
+          projectName: project.projectName || '',
+          projectResponsibilities: Array.isArray(project.projectResponsibilities) ? project.projectResponsibilities : [],
+          keyTechnologies: project.keyTechnologies || '',
+          period: project.period || ''
         })) : [],
         subsections: Array.isArray(job.subsections) ? job.subsections.map(subsection => ({
           title: subsection.title || '',
           content: Array.isArray(subsection.content) ? subsection.content : []
         })) : [],
-        keyTechnologies: job.keyTechnologies || '',
-        achievements: Array.isArray(job.achievements) ? job.achievements : [],
-        additionalFields: job.additionalFields || {}
+        keyTechnologies: job.keyTechnologies || ''
       }));
       
       // Ensure summary subsections have proper structure

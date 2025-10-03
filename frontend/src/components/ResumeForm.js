@@ -194,46 +194,7 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
     });
   };
 
-  // Handle changes to achievements array
-  const handleAchievementChange = (empIndex, achieveIndex, value) => {
-    const updatedEmployment = [...formData.employmentHistory];
-    if (!updatedEmployment[empIndex].achievements) {
-      updatedEmployment[empIndex].achievements = [];
-    }
-    
-    updatedEmployment[empIndex].achievements[achieveIndex] = value;
-    
-    setFormData({
-      ...formData,
-      employmentHistory: updatedEmployment
-    });
-  };
 
-  // Add new achievement to employment
-  const addAchievement = (empIndex) => {
-    const updatedEmployment = [...formData.employmentHistory];
-    if (!updatedEmployment[empIndex].achievements) {
-      updatedEmployment[empIndex].achievements = [];
-    }
-    
-    updatedEmployment[empIndex].achievements.push('');
-    
-    setFormData({
-      ...formData,
-      employmentHistory: updatedEmployment
-    });
-  };
-
-  // Remove achievement from employment
-  const removeAchievement = (empIndex, achieveIndex) => {
-    const updatedEmployment = [...formData.employmentHistory];
-    updatedEmployment[empIndex].achievements.splice(achieveIndex, 1);
-    
-    setFormData({
-      ...formData,
-      employmentHistory: updatedEmployment
-    });
-  };
 
   // Add new employment item
   const addEmploymentItem = () => {
@@ -245,15 +206,9 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
           companyName: '',
           roleName: '',
           responsibilities: [''],
-          client: '',
-          customer: '',
-          project: '',
-          projectRole: '',
-          projectDescription: '',
-          projectEnvironment: '',
-          clientProjects: [],
+
+          projects: [],
           subsections: [],
-          achievements: [],
           keyTechnologies: '',
           workPeriod: '',
           location: ''
@@ -412,14 +367,14 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
   };
 
   // Handle changes to client projects
-  const handleClientProjectChange = (empIndex, projIndex, field, value) => {
+  const handleProjectChange = (empIndex, projIndex, field, value) => {
     const updatedEmployment = [...formData.employmentHistory];
-    if (!updatedEmployment[empIndex].clientProjects) {
-      updatedEmployment[empIndex].clientProjects = [];
+    if (!updatedEmployment[empIndex].projects) {
+      updatedEmployment[empIndex].projects = [];
     }
     
-    updatedEmployment[empIndex].clientProjects[projIndex] = {
-      ...updatedEmployment[empIndex].clientProjects[projIndex],
+    updatedEmployment[empIndex].projects[projIndex] = {
+      ...updatedEmployment[empIndex].projects[projIndex],
       [field]: value
     };
     
@@ -429,18 +384,17 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
     });
   };
 
-  // Add new client project
-  const addClientProject = (empIndex) => {
+  // Add new project
+  const addProject = (empIndex) => {
     const updatedEmployment = [...formData.employmentHistory];
-    if (!updatedEmployment[empIndex].clientProjects) {
-      updatedEmployment[empIndex].clientProjects = [];
+    if (!updatedEmployment[empIndex].projects) {
+      updatedEmployment[empIndex].projects = [];
     }
     
-    updatedEmployment[empIndex].clientProjects.push({
-      clientName: '',
+    updatedEmployment[empIndex].projects.push({
       projectName: '',
-      projectDescription: '',
-      responsibilities: [],
+      projectResponsibilities: [''],
+      keyTechnologies: '',
       period: ''
     });
     
@@ -450,10 +404,10 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
     });
   };
 
-  // Remove client project
-  const removeClientProject = (empIndex, projIndex) => {
+  // Remove project
+  const removeProject = (empIndex, projIndex) => {
     const updatedEmployment = [...formData.employmentHistory];
-    updatedEmployment[empIndex].clientProjects.splice(projIndex, 1);
+    updatedEmployment[empIndex].projects.splice(projIndex, 1);
     
     setFormData({
       ...formData,
@@ -461,10 +415,10 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
     });
   };
 
-  // Handle client project responsibilities
-  const handleClientProjectResponsibilityChange = (empIndex, projIndex, respIndex, value) => {
+  // Handle changes to project responsibilities
+  const handleProjectResponsibilityChange = (empIndex, projIndex, respIndex, value) => {
     const updatedEmployment = [...formData.employmentHistory];
-    updatedEmployment[empIndex].clientProjects[projIndex].responsibilities[respIndex] = value;
+    updatedEmployment[empIndex].projects[projIndex].projectResponsibilities[respIndex] = value;
     
     setFormData({
       ...formData,
@@ -472,14 +426,14 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
     });
   };
 
-  // Add client project responsibility
-  const addClientProjectResponsibility = (empIndex, projIndex) => {
+  // Add new responsibility to project
+  const addProjectResponsibility = (empIndex, projIndex) => {
     const updatedEmployment = [...formData.employmentHistory];
-    if (!updatedEmployment[empIndex].clientProjects[projIndex].responsibilities) {
-      updatedEmployment[empIndex].clientProjects[projIndex].responsibilities = [];
+    if (!updatedEmployment[empIndex].projects[projIndex].projectResponsibilities) {
+      updatedEmployment[empIndex].projects[projIndex].projectResponsibilities = [];
     }
     
-    updatedEmployment[empIndex].clientProjects[projIndex].responsibilities.push('');
+    updatedEmployment[empIndex].projects[projIndex].projectResponsibilities.push('');
     
     setFormData({
       ...formData,
@@ -487,10 +441,10 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
     });
   };
 
-  // Remove client project responsibility
-  const removeClientProjectResponsibility = (empIndex, projIndex, respIndex) => {
+  // Remove responsibility from project
+  const removeProjectResponsibility = (empIndex, projIndex, respIndex) => {
     const updatedEmployment = [...formData.employmentHistory];
-    updatedEmployment[empIndex].clientProjects[projIndex].responsibilities.splice(respIndex, 1);
+    updatedEmployment[empIndex].projects[projIndex].projectResponsibilities.splice(respIndex, 1);
     
     setFormData({
       ...formData,
@@ -996,71 +950,7 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
-                  <input
-                    type="text"
-                    value={job.project || ''}
-                    onChange={(e) => handleEmploymentChange(index, 'project', e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Project name"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Client (if applicable)</label>
-                  <input
-                    type="text"
-                    value={job.client || ''}
-                    onChange={(e) => handleEmploymentChange(index, 'client', e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Main client name"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-                  <input
-                    type="text"
-                    value={job.customer || ''}
-                    onChange={(e) => handleEmploymentChange(index, 'customer', e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Customer name"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project Role</label>
-                  <input
-                    type="text"
-                    value={job.projectRole || ''}
-                    onChange={(e) => handleEmploymentChange(index, 'projectRole', e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Role in project"
-                  />
-                </div>
-                
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project Description</label>
-                  <textarea
-                    value={job.projectDescription || ''}
-                    onChange={(e) => handleEmploymentChange(index, 'projectDescription', e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                    rows="3"
-                    placeholder="Detailed description of the project"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project Environment</label>
-                  <input
-                    type="text"
-                    value={job.projectEnvironment || ''}
-                    onChange={(e) => handleEmploymentChange(index, 'projectEnvironment', e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Technologies and tools used"
-                  />
-                </div>
+
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Key Technologies/Skills</label>
@@ -1075,103 +965,94 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
                 </div>
               </div>
               
-              {/* Client Projects */}
+              {/* Projects */}
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-700">Client Projects</label>
+                  <label className="block text-sm font-medium text-gray-700">Projects</label>
                   <button 
                     type="button" 
-                    onClick={() => addClientProject(index)}
+                    onClick={() => addProject(index)}
                     className="text-blue-600 hover:text-blue-800 text-sm"
                   >
-                    <FiPlus className="inline mr-1" /> Add Client Project
+                    <FiPlus className="inline mr-1" /> Add Project
                   </button>
                 </div>
                 
-                {job.clientProjects && job.clientProjects.map((clientProject, projIndex) => (
+                {job.projects && job.projects.map((project, projIndex) => (
                   <div key={projIndex} className="border rounded p-3 mb-3 bg-gray-50">
                     <div className="flex justify-between items-center mb-2">
-                      <h5 className="font-medium text-gray-800">Client Project #{projIndex + 1}</h5>
+                      <h5 className="font-medium text-gray-800">{project.projectName || 'New Project'}</h5>
                       <button 
                         type="button" 
-                        onClick={() => removeClientProject(index, projIndex)}
+                        onClick={() => removeProject(index, projIndex)}
                         className="text-red-500 hover:text-red-700"
                       >
                         <FiTrash2 />
                       </button>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
-                        <input
-                          type="text"
-                          value={clientProject.clientName || ''}
-                          onChange={(e) => handleClientProjectChange(index, projIndex, 'clientName', e.target.value)}
-                          className="w-full px-3 py-2 border rounded-md"
-                          placeholder="Client name"
-                        />
-                      </div>
-                      
+                    <div className="grid grid-cols-1 gap-4 mb-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
                         <input
                           type="text"
-                          value={clientProject.projectName || ''}
-                          onChange={(e) => handleClientProjectChange(index, projIndex, 'projectName', e.target.value)}
+                          value={project.projectName || ''}
+                          onChange={(e) => handleProjectChange(index, projIndex, 'projectName', e.target.value)}
                           className="w-full px-3 py-2 border rounded-md"
-                          placeholder="Project name"
+                          placeholder="e.g., Project 4: RWE Datacenter-Transition/ Senior Database Administrator"
                         />
                       </div>
                       
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Project Description</label>
-                        <textarea
-                          value={clientProject.projectDescription || ''}
-                          onChange={(e) => handleClientProjectChange(index, projIndex, 'projectDescription', e.target.value)}
-                          className="w-full px-3 py-2 border rounded-md"
-                          rows="2"
-                          placeholder="Brief description of the project"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
-                        <input
-                          type="text"
-                          value={clientProject.period || ''}
-                          onChange={(e) => handleClientProjectChange(index, projIndex, 'period', e.target.value)}
-                          className="w-full px-3 py-2 border rounded-md"
-                          placeholder="e.g., 3 months, Jan 2023 - Mar 2023"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
+                          <input
+                            type="text"
+                            value={project.period || ''}
+                            onChange={(e) => handleProjectChange(index, projIndex, 'period', e.target.value)}
+                            className="w-full px-3 py-2 border rounded-md"
+                            placeholder="e.g., Jan 2023 - Mar 2023"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Key Technologies</label>
+                          <input
+                            type="text"
+                            value={project.keyTechnologies || ''}
+                            onChange={(e) => handleProjectChange(index, projIndex, 'keyTechnologies', e.target.value)}
+                            className="w-full px-3 py-2 border rounded-md"
+                            placeholder="Technologies, tools, frameworks used"
+                          />
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Client Project Responsibilities */}
+                    {/* Project Responsibilities */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label className="block text-sm font-medium text-gray-700">Project Responsibilities</label>
                         <button 
                           type="button" 
-                          onClick={() => addClientProjectResponsibility(index, projIndex)}
+                          onClick={() => addProjectResponsibility(index, projIndex)}
                           className="text-blue-600 hover:text-blue-800 text-sm"
                         >
                           <FiPlus className="inline mr-1" /> Add
                         </button>
                       </div>
                       
-                      {clientProject.responsibilities && clientProject.responsibilities.map((resp, respIndex) => (
+                      {project.projectResponsibilities && project.projectResponsibilities.map((resp, respIndex) => (
                         <div key={respIndex} className="flex items-center mb-2">
                           <input
                             type="text"
                             value={resp || ''}
-                            onChange={(e) => handleClientProjectResponsibilityChange(index, projIndex, respIndex, e.target.value)}
+                            onChange={(e) => handleProjectResponsibilityChange(index, projIndex, respIndex, e.target.value)}
                             className="flex-1 px-3 py-2 border rounded-md"
                             placeholder="Project responsibility"
                           />
                           <button 
                             type="button" 
-                            onClick={() => removeClientProjectResponsibility(index, projIndex, respIndex)}
+                            onClick={() => removeProjectResponsibility(index, projIndex, respIndex)}
                             className="ml-2 text-red-500 hover:text-red-700"
                           >
                             <FiTrash2 />
@@ -1179,15 +1060,15 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
                         </div>
                       ))}
                       
-                      {(!clientProject.responsibilities || clientProject.responsibilities.length === 0) && (
+                      {(!project.projectResponsibilities || project.projectResponsibilities.length === 0) && (
                         <p className="text-gray-500 text-sm">No project responsibilities added.</p>
                       )}
                     </div>
                   </div>
                 ))}
                 
-                {(!job.clientProjects || job.clientProjects.length === 0) && (
-                  <p className="text-gray-500 text-sm">No client projects added. Use this for jobs with multiple clients or projects.</p>
+                {(!job.projects || job.projects.length === 0) && (
+                  <p className="text-gray-500 text-sm">No projects added. Add projects to show specific work within this job.</p>
                 )}
               </div>
               
@@ -1228,42 +1109,6 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
                 )}
               </div>
 
-              {/* Achievements */}
-              <div className="mb-2">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-700">Achievements</label>
-                  <button 
-                    type="button" 
-                    onClick={() => addAchievement(index)}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    <FiPlus className="inline mr-1" /> Add
-                  </button>
-                </div>
-                
-                {job.achievements && job.achievements.map((achievement, achieveIndex) => (
-                  <div key={achieveIndex} className="flex items-center mb-2">
-                    <input
-                      type="text"
-                      value={achievement || ''}
-                      onChange={(e) => handleAchievementChange(index, achieveIndex, e.target.value)}
-                      className="flex-1 px-3 py-2 border rounded-md"
-                      placeholder="Achievement"
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => removeAchievement(index, achieveIndex)}
-                      className="ml-2 text-red-500 hover:text-red-700"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
-                ))}
-                
-                {(!job.achievements || job.achievements.length === 0) && (
-                  <p className="text-gray-500 text-sm">No achievements added.</p>
-                )}
-              </div>
 
               {/* Subsections */}
               <div className="mt-4">

@@ -360,7 +360,7 @@ def remove_duplicate_sections(matches: List[Dict[str, any]]) -> List[Dict[str, a
 
 def sanitize_sensitive_info(sections: Dict[str, str]) -> Dict[str, str]:
     """
-    Remove sensitive information like email, phone, and LinkedIn URLs from all sections
+    Remove sensitive information like email, phone, LinkedIn URLs, and GitHub URLs from all sections
     Equivalent to sanitizeSensitiveInfo function in Node.js
 
     Args:
@@ -399,6 +399,18 @@ def sanitize_sensitive_info(sections: Dict[str, str]) -> Dict[str, str]:
         sanitized_content = re.sub(
             r'linkedin\.com/in/[^\s]+',
             '[LINKEDIN REDACTED]',
+            sanitized_content
+        )
+
+        # Remove GitHub URLs
+        sanitized_content = re.sub(
+            r'https?://(www\.)?github\.com/[^\s]+',
+            '[GITHUB REDACTED]',
+            sanitized_content
+        )
+        sanitized_content = re.sub(
+            r'github\.com/[^\s]+',
+            '[GITHUB REDACTED]',
             sanitized_content
         )
 

@@ -98,5 +98,5 @@ public
 tmp/
 temp/
 
-# Standalone resume builder - not to be pushed to GitHub
-standalone-resume-builder/
+client/
+server/
