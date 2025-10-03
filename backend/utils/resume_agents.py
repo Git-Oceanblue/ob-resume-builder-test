@@ -228,18 +228,11 @@ class MultiAgentResumeProcessor:
         """
         logger.info("🚀 Multi-Agent Resume Processing: Starting parallel extraction...")
         
+        # 🔥 Chunk the resume first
         yield {
-            'type': 'agent_processing_start',
-            'message': 'Initializing specialized AI agents...',
-            'progress': 15,
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        # 🔥 NEW: Chunk the resume first
-        yield {
-            'type': 'chunking_start',
-            'message': 'Chunking resume into sections...',
-            'progress': 18,
+            'type': 'progress',
+            'message': 'Analyzing resume structure...',
+            'progress': 20,
             'timestamp': datetime.now().isoformat()
         }
         
@@ -253,14 +246,6 @@ class MultiAgentResumeProcessor:
         
         logger.info(f"📊 Chunked sections available: {list(sections.keys())}")
         
-        yield {
-            'type': 'chunking_complete',
-            'message': f'Resume chunked into {len(sections)} sections. Preparing agent inputs...',
-            'progress': 22,
-            'sections': list(sections.keys()),
-            'timestamp': datetime.now().isoformat()
-        }
-        
         # Create all agents
         agents = [
             ResumeAgent(self.client, AgentType.HEADER),
@@ -271,35 +256,13 @@ class MultiAgentResumeProcessor:
             ResumeAgent(self.client, AgentType.CERTIFICATIONS)
         ]
         
-        yield {
-            'type': 'agents_created',
-            'message': f'Created {len(agents)} specialized agents. Preparing intelligent inputs...',
-            'progress': 25,
-            'agents': [agent.agent_type.value for agent in agents],
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        # 🎯 NEW: Prepare intelligent inputs for each agent
+        # 🎯 Prepare intelligent inputs for each agent
         agent_inputs = self._prepare_agent_inputs(agents, sections, raw_text)
         
-        # Create strategy summary for user feedback
-        strategy_summary = {}
-        for agent_type, strategy in agent_inputs['strategy'].items():
-            if strategy == 'chunked_section':
-                strategy_summary[agent_type] = '✅ Using chunked section'
-            elif strategy == 'chunked_with_context':
-                strategy_summary[agent_type] = '✅ Using chunked section + context'
-            elif strategy == 'full_resume_always':
-                strategy_summary[agent_type] = '🔍 Using full resume (certification rule)'
-            elif strategy == 'full_resume_fallback':
-                strategy_summary[agent_type] = '⚠️ Using full resume (section missing)'
-        
         yield {
-            'type': 'inputs_prepared',
-            'message': 'Agent inputs prepared with intelligent chunking. Starting parallel processing...',
-            'progress': 28,
-            'input_strategy': agent_inputs['strategy'],
-            'strategy_summary': strategy_summary,
+            'type': 'progress',
+            'message': 'Processing resume with AI agents...',
+            'progress': 30,
             'timestamp': datetime.now().isoformat()
         }
         
@@ -312,9 +275,9 @@ class MultiAgentResumeProcessor:
             results = await asyncio.gather(*agent_tasks, return_exceptions=True)
             
             yield {
-                'type': 'agents_completed',
-                'message': 'All agents completed processing. Combining results...',
-                'progress': 75,
+                'type': 'progress',
+                'message': 'Combining results...',
+                'progress': 80,
                 'timestamp': datetime.now().isoformat()
             }
             
@@ -336,25 +299,15 @@ class MultiAgentResumeProcessor:
             # Combine results into final structure
             combined_data = self._combine_agent_results(successful_results)
             
-            # Report any failures
+            # Report any failures (but don't yield a separate event)
             if failed_agents:
                 logger.warning(f"Some agents failed: {failed_agents}")
-                yield {
-                    'type': 'partial_failure',
-                    'message': f'Warning: {len(failed_agents)} agents failed, but processing continued',
-                    'failed_agents': failed_agents,
-                    'timestamp': datetime.now().isoformat()
-                }
             
             yield {
                 'type': 'final_data',
                 'data': combined_data,
-                'message': 'Multi-agent processing completed successfully!',
-                'progress': 95,
-                'processing_summary': {
-                    'successful_agents': len(successful_results),
-                    'failed_agents': len(failed_agents)
-                },
+                'message': 'Resume processing completed successfully!',
+                'progress': 100,
                 'timestamp': datetime.now().isoformat()
             }
             

@@ -13,11 +13,7 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingProgress, setStreamingProgress] = useState(0);
   const [currentMessage, setCurrentMessage] = useState('');
-  const [detectedSections, setDetectedSections] = useState([]);
-  const [completedSections, setCompletedSections] = useState([]);
-  const [estimatedCost, setEstimatedCost] = useState(0);
   const [processingStartTime, setProcessingStartTime] = useState(null);
-  const [chunkingStrategy, setChunkingStrategy] = useState({});
 
   // Handle file drop using react-dropzone
   const onDrop = useCallback((acceptedFiles) => {
@@ -85,9 +81,6 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
     setError('');
     setStreamingProgress(0);
     setCurrentMessage('');
-    setDetectedSections([]);
-    setCompletedSections([]);
-    setChunkingStrategy({});
     setProcessingStartTime(Date.now());
     
     try {
@@ -146,67 +139,12 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
   
   // 📊 HANDLE INDIVIDUAL STREAMING EVENTS
   const handleStreamingEvent = (data) => {
+    console.log('📡 Streaming Event:', data.type, data.progress, data.message);
     
     switch (data.type) {
-      case 'connection':
-        setCurrentMessage('Connected to streaming server');
-        break;
-        
       case 'progress':
         setStreamingProgress(data.progress || 0);
         setCurrentMessage(data.message || '');
-        break;
-        
-      case 'chunking_start':
-        setCurrentMessage(data.message || 'Chunking resume into sections...');
-        setStreamingProgress(data.progress || 18);
-        break;
-        
-      case 'chunking_complete':
-        setCurrentMessage(data.message || 'Resume chunked successfully');
-        setStreamingProgress(data.progress || 22);
-        if (data.sections) {
-          setDetectedSections(data.sections);
-        }
-        break;
-        
-      case 'inputs_prepared':
-        setCurrentMessage(data.message || 'Agent inputs prepared');
-        setStreamingProgress(data.progress || 28);
-        // Store and log the strategy summary
-        if (data.strategy_summary) {
-          setChunkingStrategy(data.strategy_summary);
-          console.log('🎯 Agent Input Strategy:', data.strategy_summary);
-        }
-        break;
-        
-      case 'sections_detected':
-        setDetectedSections(data.sections || []);
-        setCurrentMessage(data.message || '');
-        setStreamingProgress(data.progress || 40);
-        break;
-        
-      case 'section_processing':
-        setCurrentMessage(data.message || '');
-        setStreamingProgress(data.progress || 50);
-        break;
-        
-      case 'section_skip':
-        setCurrentMessage(`Skipping ${data.section} section - ${data.message}`);
-        // If it's the certifications section, add it to completed sections
-        if (data.section === 'certifications') {
-          setCompletedSections(prev => [...prev, data.section]);
-        }
-        break;
-        
-      case 'section_complete':
-        setCompletedSections(prev => [...prev, data.section]);
-        setCurrentMessage(data.message || '');
-        setStreamingProgress(data.progress || 70);
-        
-        // Calculate estimated cost (rough) - GPT-4o-mini pricing
-        const tokenEstimate = JSON.stringify(data.data).length / 4;
-        setEstimatedCost(prev => prev + (tokenEstimate * 0.0006 / 1000)); // GPT-4o-mini output token pricing ($0.0006 per 1K tokens)
         break;
         
       case 'final_data':
@@ -218,7 +156,6 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
           const sanitizedData = sanitizeResumeData(data.data);
           onResumeDataExtracted(sanitizedData);
         }
-        
         break;
         
       case 'error':
@@ -226,7 +163,8 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
         break;
         
       default:
-        // Handle unknown event types silently
+        // Log unknown events for debugging
+        console.log('🔍 Unknown event type:', data.type, data);
     }
   };
   
@@ -446,61 +384,7 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
             </div>
           </div>
           
-          {/* Detected Sections */}
-          {detectedSections.length > 0 && (
-            <div className="mb-6">
-              <h4 className="text-lg font-semibold text-ocean-dark mb-3">📋 Resume Sections Detected:</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {detectedSections.map((section, index) => (
-                  <div 
-                    key={index}
-                    className={`flex items-center px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
-                      completedSections.includes(section) 
-                        ? 'bg-green-100 text-green-800 shadow-md' 
-                        : 'bg-white text-ocean-dark border border-gray-200'
-                    }`}
-                  >
-                    {completedSections.includes(section) ? (
-                      <FiCheckCircle className="mr-2 text-green-600" />
-                    ) : (
-                      <FiLoader className="mr-2 animate-spin text-ocean-blue" />
-                    )}
-                    <span className="capitalize">{section}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Chunking Strategy Display */}
-          {Object.keys(chunkingStrategy).length > 0 && (
-            <div className="mb-6">
-              <h4 className="text-lg font-semibold text-ocean-dark mb-3">🎯 AI Processing Strategy:</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {Object.entries(chunkingStrategy).map(([agent, strategy]) => (
-                  <div 
-                    key={agent}
-                    className="flex items-center px-4 py-3 rounded-lg bg-blue-50 border border-blue-200 text-sm"
-                  >
-                    <div className="flex-1">
-                      <span className="font-medium capitalize text-ocean-dark">{agent}:</span>
-                      <span className="ml-2 text-blue-700">{strategy}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Cost Tracking */}
-          {estimatedCost > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-green-700 font-medium">💰 Estimated Processing Cost:</span>
-                <span className="font-bold text-green-800">${estimatedCost.toFixed(6)}</span>
-              </div>
-            </div>
-          )}
+
           
           {/* Processing Time */}
           {processingStartTime && (
