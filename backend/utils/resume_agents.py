@@ -232,7 +232,7 @@ class MultiAgentResumeProcessor:
         yield {
             'type': 'progress',
             'message': 'Analyzing resume structure...',
-            'progress': 20,
+            'progress': 10,
             'timestamp': datetime.now().isoformat()
         }
         
@@ -245,6 +245,14 @@ class MultiAgentResumeProcessor:
             sections = {}
         
         logger.info(f"📊 Chunked sections available: {list(sections.keys())}")
+        
+        yield {
+            'type': 'sections_detected',
+            'message': f'Found {len(sections)} resume sections',
+            'progress': 20,
+            'sections': list(sections.keys()),
+            'timestamp': datetime.now().isoformat()
+        }
         
         # Create all agents
         agents = [
@@ -260,23 +268,34 @@ class MultiAgentResumeProcessor:
         agent_inputs = self._prepare_agent_inputs(agents, sections, raw_text)
         
         yield {
-            'type': 'progress',
-            'message': 'Processing resume with AI agents...',
+            'type': 'processing_start',
+            'message': 'Starting AI processing of resume sections...',
             'progress': 30,
+            'agents': [agent.agent_type.value for agent in agents],
             'timestamp': datetime.now().isoformat()
         }
         
         # Process all agents in parallel with intelligent inputs
         try:
-            agent_tasks = [
-                agent.process(agent_inputs['inputs'][agent.agent_type], model) 
-                for agent in agents
-            ]
+            # Start processing with progress updates
+            agent_tasks = []
+            for i, agent in enumerate(agents):
+                progress = 35 + (i * 5)  # 35, 40, 45, 50, 55, 60
+                yield {
+                    'type': 'agent_processing',
+                    'message': f'Processing {agent.agent_type.value} section...',
+                    'progress': progress,
+                    'current_agent': agent.agent_type.value,
+                    'timestamp': datetime.now().isoformat()
+                }
+                agent_tasks.append(agent.process(agent_inputs['inputs'][agent.agent_type], model))
+            
+            # Wait for all agents to complete
             results = await asyncio.gather(*agent_tasks, return_exceptions=True)
             
             yield {
                 'type': 'progress',
-                'message': 'Combining results...',
+                'message': 'All sections processed. Combining results...',
                 'progress': 80,
                 'timestamp': datetime.now().isoformat()
             }

@@ -14,6 +14,8 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
   const [streamingProgress, setStreamingProgress] = useState(0);
   const [currentMessage, setCurrentMessage] = useState('');
   const [processingStartTime, setProcessingStartTime] = useState(null);
+  const [detectedSections, setDetectedSections] = useState([]);
+  const [currentAgent, setCurrentAgent] = useState('');
 
   // Handle file drop using react-dropzone
   const onDrop = useCallback((acceptedFiles) => {
@@ -81,6 +83,8 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
     setError('');
     setStreamingProgress(0);
     setCurrentMessage('');
+    setDetectedSections([]);
+    setCurrentAgent('');
     setProcessingStartTime(Date.now());
     
     try {
@@ -147,9 +151,31 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
         setCurrentMessage(data.message || '');
         break;
         
+      case 'sections_detected':
+        setStreamingProgress(data.progress || 20);
+        setCurrentMessage(data.message || '');
+        if (data.sections) {
+          setDetectedSections(data.sections);
+        }
+        break;
+        
+      case 'processing_start':
+        setStreamingProgress(data.progress || 30);
+        setCurrentMessage(data.message || '');
+        break;
+        
+      case 'agent_processing':
+        setStreamingProgress(data.progress || 40);
+        setCurrentMessage(data.message || '');
+        if (data.current_agent) {
+          setCurrentAgent(data.current_agent);
+        }
+        break;
+        
       case 'final_data':
         setStreamingProgress(100);
         setCurrentMessage('Processing complete! 🎉');
+        setCurrentAgent('');
         
         // Validate and sanitize final data before passing to parent
         if (data.data) {
@@ -385,6 +411,35 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
           </div>
           
 
+          
+          {/* Detected Sections */}
+          {detectedSections.length > 0 && (
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-ocean-dark mb-3">📋 Resume Sections Found:</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {detectedSections.map((section, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center px-4 py-3 rounded-lg bg-blue-50 border border-blue-200 text-sm font-medium text-ocean-dark"
+                  >
+                    <span className="capitalize">{section}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Current Processing Agent */}
+          {currentAgent && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+              <div className="flex items-center">
+                <FiLoader className="animate-spin mr-3 text-green-600" />
+                <span className="text-green-800 font-medium">
+                  Currently processing: <span className="capitalize font-bold">{currentAgent}</span> section
+                </span>
+              </div>
+            </div>
+          )}
           
           {/* Processing Time */}
           {processingStartTime && (
