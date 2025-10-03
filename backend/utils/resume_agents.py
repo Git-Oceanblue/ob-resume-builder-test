@@ -100,12 +100,12 @@ CRITICAL PROJECT EXTRACTION RULES:
         
         return cache_breaker + text
     
-    async def process(self, raw_text: str, model: str = 'gpt-4o-mini') -> AgentResult:
+    async def process(self, input_text: str, model: str = 'gpt-4o-mini') -> AgentResult:
         """
         Process resume text and extract section-specific data
         
         Args:
-            raw_text: Complete resume text
+            input_text: Resume text (can be full resume or chunked section)
             model: OpenAI model to use
             
         Returns:
@@ -114,11 +114,12 @@ CRITICAL PROJECT EXTRACTION RULES:
         start_time = start_timing()
         
         try:
-            logger.info(f"🤖 {self.agent_type.value.title()} Agent: Starting extraction...")
+            input_length = len(input_text)
+            logger.info(f"🤖 {self.agent_type.value.title()} Agent: Starting extraction... (Input: {input_length} chars)")
             
             # Prepare the prompt with cache busting
             user_prompt = self._add_cache_variation(
-                f"Extract {self.agent_type.value} information from this resume:\n\n{raw_text}"
+                f"Extract {self.agent_type.value} information from this resume:\n\n{input_text}"
             )
             
             # Make OpenAI API call
@@ -215,7 +216,7 @@ class MultiAgentResumeProcessor:
         model: str = 'gpt-4o-mini'
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Process resume using multiple specialized agents in parallel
+        Process resume using multiple specialized agents in parallel with intelligent chunking
         
         Args:
             raw_text: Complete resume text
@@ -233,6 +234,32 @@ class MultiAgentResumeProcessor:
             'timestamp': datetime.now().isoformat()
         }
         
+        # 🔥 NEW: Chunk the resume first
+        yield {
+            'type': 'chunking_start',
+            'message': 'Chunking resume into sections...',
+            'progress': 18,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        from .chunk_resume import chunk_resume_from_bold_headings
+        sections = chunk_resume_from_bold_headings(raw_text)
+        
+        # Check if chunking was successful
+        if 'error' in sections:
+            logger.warning(f"⚠️ Chunking failed: {sections['error']} - Using full resume for all agents")
+            sections = {}
+        
+        logger.info(f"📊 Chunked sections available: {list(sections.keys())}")
+        
+        yield {
+            'type': 'chunking_complete',
+            'message': f'Resume chunked into {len(sections)} sections. Preparing agent inputs...',
+            'progress': 22,
+            'sections': list(sections.keys()),
+            'timestamp': datetime.now().isoformat()
+        }
+        
         # Create all agents
         agents = [
             ResumeAgent(self.client, AgentType.HEADER),
@@ -245,15 +272,42 @@ class MultiAgentResumeProcessor:
         
         yield {
             'type': 'agents_created',
-            'message': f'Created {len(agents)} specialized agents. Starting parallel processing...',
+            'message': f'Created {len(agents)} specialized agents. Preparing intelligent inputs...',
             'progress': 25,
             'agents': [agent.agent_type.value for agent in agents],
             'timestamp': datetime.now().isoformat()
         }
         
-        # Process all agents in parallel
+        # 🎯 NEW: Prepare intelligent inputs for each agent
+        agent_inputs = self._prepare_agent_inputs(agents, sections, raw_text)
+        
+        # Create strategy summary for user feedback
+        strategy_summary = {}
+        for agent_type, strategy in agent_inputs['strategy'].items():
+            if strategy == 'chunked_section':
+                strategy_summary[agent_type] = '✅ Using chunked section'
+            elif strategy == 'chunked_with_context':
+                strategy_summary[agent_type] = '✅ Using chunked section + context'
+            elif strategy == 'full_resume_always':
+                strategy_summary[agent_type] = '🔍 Using full resume (certification rule)'
+            elif strategy == 'full_resume_fallback':
+                strategy_summary[agent_type] = '⚠️ Using full resume (section missing)'
+        
+        yield {
+            'type': 'inputs_prepared',
+            'message': 'Agent inputs prepared with intelligent chunking. Starting parallel processing...',
+            'progress': 28,
+            'input_strategy': agent_inputs['strategy'],
+            'strategy_summary': strategy_summary,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # Process all agents in parallel with intelligent inputs
         try:
-            agent_tasks = [agent.process(raw_text, model) for agent in agents]
+            agent_tasks = [
+                agent.process(agent_inputs['inputs'][agent.agent_type], model) 
+                for agent in agents
+            ]
             results = await asyncio.gather(*agent_tasks, return_exceptions=True)
             
             yield {
@@ -310,6 +364,69 @@ class MultiAgentResumeProcessor:
                 'message': f'Multi-agent processing failed: {str(e)}',
                 'timestamp': datetime.now().isoformat()
             }
+    
+    def _prepare_agent_inputs(self, agents: List[ResumeAgent], sections: Dict[str, str], raw_text: str) -> Dict[str, Any]:
+        """
+        Prepare intelligent inputs for each agent based on chunked sections
+        
+        Args:
+            agents: List of resume agents
+            sections: Chunked resume sections
+            raw_text: Complete resume text as fallback
+            
+        Returns:
+            Dictionary with agent inputs and strategy information
+        """
+        agent_inputs = {}
+        strategy = {}
+        
+        # Section mapping for agents
+        section_mapping = {
+            AgentType.HEADER: 'header',
+            AgentType.SUMMARY: 'summary', 
+            AgentType.EXPERIENCE: 'experience',
+            AgentType.EDUCATION: 'education',
+            AgentType.SKILLS: 'skills',
+            AgentType.CERTIFICATIONS: 'certifications'  # Special case - always gets full resume
+        }
+        
+        for agent in agents:
+            agent_type = agent.agent_type
+            section_key = section_mapping[agent_type]
+            
+            # 🎯 CERTIFICATION AGENT: Always gets full resume
+            if agent_type == AgentType.CERTIFICATIONS:
+                agent_inputs[agent_type] = raw_text
+                strategy[agent_type.value] = 'full_resume_always'
+                logger.info(f"🔍 {agent_type.value.title()} Agent: Using full resume (certification rule)")
+                continue
+            
+            # 🎯 OTHER AGENTS: Use chunked section if available, otherwise full resume
+            if section_key in sections and sections[section_key] and sections[section_key].strip():
+                # Use chunked section
+                chunked_content = sections[section_key].strip()
+                
+                # For header agent, also include some context from the beginning
+                if agent_type == AgentType.HEADER:
+                    # Include first 1000 characters for better context
+                    context_text = raw_text[:1000]
+                    agent_inputs[agent_type] = f"{context_text}\n\n--- HEADER SECTION ---\n{chunked_content}"
+                    strategy[agent_type.value] = 'chunked_with_context'
+                else:
+                    agent_inputs[agent_type] = chunked_content
+                    strategy[agent_type.value] = 'chunked_section'
+                
+                logger.info(f"✅ {agent_type.value.title()} Agent: Using chunked section ({len(chunked_content)} chars)")
+            else:
+                # Fallback to full resume
+                agent_inputs[agent_type] = raw_text
+                strategy[agent_type.value] = 'full_resume_fallback'
+                logger.info(f"⚠️ {agent_type.value.title()} Agent: Section missing/empty, using full resume")
+        
+        return {
+            'inputs': agent_inputs,
+            'strategy': strategy
+        }
     
     def _combine_agent_results(self, results: List[AgentResult]) -> Dict[str, Any]:
         """

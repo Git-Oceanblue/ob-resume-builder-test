@@ -17,6 +17,7 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
   const [completedSections, setCompletedSections] = useState([]);
   const [estimatedCost, setEstimatedCost] = useState(0);
   const [processingStartTime, setProcessingStartTime] = useState(null);
+  const [chunkingStrategy, setChunkingStrategy] = useState({});
 
   // Handle file drop using react-dropzone
   const onDrop = useCallback((acceptedFiles) => {
@@ -86,6 +87,7 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
     setCurrentMessage('');
     setDetectedSections([]);
     setCompletedSections([]);
+    setChunkingStrategy({});
     setProcessingStartTime(Date.now());
     
     try {
@@ -153,6 +155,29 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
       case 'progress':
         setStreamingProgress(data.progress || 0);
         setCurrentMessage(data.message || '');
+        break;
+        
+      case 'chunking_start':
+        setCurrentMessage(data.message || 'Chunking resume into sections...');
+        setStreamingProgress(data.progress || 18);
+        break;
+        
+      case 'chunking_complete':
+        setCurrentMessage(data.message || 'Resume chunked successfully');
+        setStreamingProgress(data.progress || 22);
+        if (data.sections) {
+          setDetectedSections(data.sections);
+        }
+        break;
+        
+      case 'inputs_prepared':
+        setCurrentMessage(data.message || 'Agent inputs prepared');
+        setStreamingProgress(data.progress || 28);
+        // Store and log the strategy summary
+        if (data.strategy_summary) {
+          setChunkingStrategy(data.strategy_summary);
+          console.log('🎯 Agent Input Strategy:', data.strategy_summary);
+        }
         break;
         
       case 'sections_detected':
@@ -441,6 +466,26 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
                       <FiLoader className="mr-2 animate-spin text-ocean-blue" />
                     )}
                     <span className="capitalize">{section}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Chunking Strategy Display */}
+          {Object.keys(chunkingStrategy).length > 0 && (
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-ocean-dark mb-3">🎯 AI Processing Strategy:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {Object.entries(chunkingStrategy).map(([agent, strategy]) => (
+                  <div 
+                    key={agent}
+                    className="flex items-center px-4 py-3 rounded-lg bg-blue-50 border border-blue-200 text-sm"
+                  >
+                    <div className="flex-1">
+                      <span className="font-medium capitalize text-ocean-dark">{agent}:</span>
+                      <span className="ml-2 text-blue-700">{strategy}</span>
+                    </div>
                   </div>
                 ))}
               </div>
