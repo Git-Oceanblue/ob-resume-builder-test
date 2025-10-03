@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useDropzone } from 'react-dropzone';
 import { FiUpload, FiFileText, FiAlertCircle, FiCheckCircle, FiLoader, FiFile } from 'react-icons/fi';
 
@@ -155,7 +156,13 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
               }
               const data = JSON.parse(eventData);
               console.log('📨 Parsed event:', data);
-              handleStreamingEvent(data);
+              
+              // Force immediate UI update using multiple approaches
+              requestAnimationFrame(() => {
+                setTimeout(() => {
+                  handleStreamingEvent(data);
+                }, 0);
+              });
             } catch (parseError) {
               console.error('❌ Parse error:', parseError, 'Event:', event);
             }
@@ -175,71 +182,74 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
   const handleStreamingEvent = (data) => {
     console.log('📡 Streaming Event:', data.type, data.progress, data.message);
     
-    switch (data.type) {
-      case 'connection':
-        console.log('🔄 Setting progress to:', data.progress || 5);
-        setStreamingProgress(data.progress || 5);
-        setCurrentMessage(data.message || 'Connected to server');
-        break;
-        
-      case 'progress':
-        console.log('🔄 Setting progress to:', data.progress || 0);
-        setStreamingProgress(data.progress || 0);
-        setCurrentMessage(data.message || '');
-        break;
-        
-      case 'sections_detected':
-        setStreamingProgress(data.progress || 20);
-        setCurrentMessage(data.message || '');
-        if (data.sections) {
-          setDetectedSections(data.sections);
-        }
-        break;
-        
-      case 'processing_start':
-        setStreamingProgress(data.progress || 30);
-        setCurrentMessage(data.message || '');
-        break;
-        
-      case 'agent_processing':
-        setStreamingProgress(data.progress || 40);
-        setCurrentMessage(data.message || '');
-        if (data.current_agent) {
-          setCurrentAgent(data.current_agent);
-        }
-        break;
-        
-      case 'processing_strategy':
-        setStreamingProgress(data.progress || 15);
-        setCurrentMessage(data.message || '');
-        break;
-        
-      case 'complete':
-        setStreamingProgress(100);
-        setCurrentMessage(data.message || 'Processing complete! 🎉');
-        setCurrentAgent('');
-        break;
-        
-      case 'final_data':
-        setStreamingProgress(100);
-        setCurrentMessage('Processing complete! 🎉');
-        setCurrentAgent('');
-        
-        // Validate and sanitize final data before passing to parent
-        if (data.data) {
-          const sanitizedData = sanitizeResumeData(data.data);
-          onResumeDataExtracted(sanitizedData);
-        }
-        break;
-        
-      case 'error':
-        setError(data.message || 'Unknown streaming error');
-        break;
-        
-      default:
-        // Log unknown events for debugging
-        console.log('🔍 Unknown event type:', data.type, data);
-    }
+    // Use flushSync to force immediate React updates for real-time progress
+    flushSync(() => {
+      switch (data.type) {
+        case 'connection':
+          console.log('🔄 Setting progress to:', data.progress || 5);
+          setStreamingProgress(data.progress || 5);
+          setCurrentMessage(data.message || 'Connected to server');
+          break;
+          
+        case 'progress':
+          console.log('🔄 Setting progress to:', data.progress || 0);
+          setStreamingProgress(data.progress || 0);
+          setCurrentMessage(data.message || '');
+          break;
+          
+        case 'sections_detected':
+          setStreamingProgress(data.progress || 20);
+          setCurrentMessage(data.message || '');
+          if (data.sections) {
+            setDetectedSections(data.sections);
+          }
+          break;
+          
+        case 'processing_start':
+          setStreamingProgress(data.progress || 30);
+          setCurrentMessage(data.message || '');
+          break;
+          
+        case 'agent_processing':
+          setStreamingProgress(data.progress || 40);
+          setCurrentMessage(data.message || '');
+          if (data.current_agent) {
+            setCurrentAgent(data.current_agent);
+          }
+          break;
+          
+        case 'processing_strategy':
+          setStreamingProgress(data.progress || 15);
+          setCurrentMessage(data.message || '');
+          break;
+          
+        case 'complete':
+          setStreamingProgress(100);
+          setCurrentMessage(data.message || 'Processing complete! 🎉');
+          setCurrentAgent('');
+          break;
+          
+        case 'final_data':
+          setStreamingProgress(100);
+          setCurrentMessage('Processing complete! 🎉');
+          setCurrentAgent('');
+          
+          // Validate and sanitize final data before passing to parent
+          if (data.data) {
+            const sanitizedData = sanitizeResumeData(data.data);
+            onResumeDataExtracted(sanitizedData);
+          }
+          break;
+          
+        case 'error':
+          setError(data.message || 'Unknown streaming error');
+          break;
+          
+        default:
+          // Log unknown events for debugging
+          console.log('🔍 Unknown event type:', data.type, data);
+      }
+    });
   };
   
   // 🔧 DATA SANITIZATION FUNCTION

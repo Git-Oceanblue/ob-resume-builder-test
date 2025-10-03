@@ -236,6 +236,9 @@ class MultiAgentResumeProcessor:
             'timestamp': datetime.now().isoformat()
         }
         
+        # Small delay to ensure event is processed
+        await asyncio.sleep(0.2)
+        
         from .chunk_resume import chunk_resume_from_bold_headings
         sections = chunk_resume_from_bold_headings(raw_text)
         
@@ -253,6 +256,9 @@ class MultiAgentResumeProcessor:
             'sections': list(sections.keys()),
             'timestamp': datetime.now().isoformat()
         }
+        
+        # Small delay to ensure event is processed
+        await asyncio.sleep(0.2)
         
         # Create all agents
         agents = [
@@ -275,6 +281,9 @@ class MultiAgentResumeProcessor:
             'timestamp': datetime.now().isoformat()
         }
         
+        # Small delay before starting agent processing
+        await asyncio.sleep(0.2)
+        
         # Process all agents in parallel with intelligent inputs
         try:
             # Start processing with progress updates
@@ -288,6 +297,9 @@ class MultiAgentResumeProcessor:
                     'current_agent': agent.agent_type.value,
                     'timestamp': datetime.now().isoformat()
                 }
+                # Small delay to ensure events are processed separately
+                import asyncio
+                await asyncio.sleep(0.1)
                 agent_tasks.append(agent.process(agent_inputs['inputs'][agent.agent_type], model))
             
             # Wait for all agents to complete
