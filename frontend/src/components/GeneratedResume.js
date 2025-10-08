@@ -885,7 +885,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                 if (responsibility.trim()) {
                   paragraphs.push(
                     new Paragraph({
-                      alignment: AlignmentType.JUSTIFY,
+                      alignment: AlignmentType.JUSTIFIED,
                       bullet: {
                         level: 0
                       },
@@ -951,7 +951,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
             if (resp.trim()) {
               paragraphs.push(
                 new Paragraph({
-                  alignment: AlignmentType.JUSTIFY,
+                  alignment: AlignmentType.JUSTIFIED,
                   bullet: {
                     level: 0
                   },
@@ -1000,7 +1000,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                   if (item.trim()) {
                     paragraphs.push(
                       new Paragraph({
-                        alignment: AlignmentType.JUSTIFY,
+                        alignment: AlignmentType.JUSTIFIED,
                         bullet: {
                           level: 0
                         },
@@ -1373,7 +1373,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
               // Professional Summary Content
               ...(resumeData.professionalSummary || []).map(point => (
                 new Paragraph({
-                  alignment: AlignmentType.JUSTIFY,
+                  alignment: AlignmentType.JUSTIFIED,
                   bullet: {
                     level: 0
                   },
@@ -1412,7 +1412,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                 ...(subsection.content && subsection.content.length > 0
                   ? subsection.content.map(item => (
                     new Paragraph({
-                      alignment: AlignmentType.JUSTIFY,
+                      alignment: AlignmentType.JUSTIFIED,
                       bullet: {
                         level: 0
                       },
