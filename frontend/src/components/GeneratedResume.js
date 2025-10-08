@@ -795,7 +795,12 @@ const GeneratedResume = ({ resumeData, onBack }) => {
 
           job.projects.forEach(project => {
             // Project header with duration in same line (right-aligned)
-            const projectTitle = project.projectName || 'Project';
+            let projectTitle = project.projectName || 'Project';
+            
+            // Add location to project title if projectLocation exists
+            if (project.projectLocation) {
+              projectTitle = `${projectTitle} - ${project.projectLocation}`;
+            }
 
             paragraphs.push(
               new Table({
@@ -1578,6 +1583,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
                       <div key={projIndex} className="border-l-2 border-blue-200 pl-4 mb-3 bg-blue-50 p-3 rounded">
                         <h5 className="font-medium text-blue-800">
                           {project.projectName || 'Project'}
+                          {project.projectLocation && ` - ${project.projectLocation}`}
                         </h5>
                         {project.period && (
                           <p className="text-sm text-gray-600 mb-1">Duration: {project.period}</p>

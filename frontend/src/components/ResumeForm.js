@@ -393,6 +393,7 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
     
     updatedEmployment[empIndex].projects.push({
       projectName: '',
+      projectLocation: '',
       projectResponsibilities: [''],
       keyTechnologies: '',
       period: ''
@@ -1000,6 +1001,17 @@ const ResumeForm = ({ initialData, onSubmit, onBack }) => {
                           onChange={(e) => handleProjectChange(index, projIndex, 'projectName', e.target.value)}
                           className="w-full px-3 py-2 border rounded-md"
                           placeholder="e.g., Project 4: RWE Datacenter-Transition/ Senior Database Administrator"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Project Location (Optional)</label>
+                        <input
+                          type="text"
+                          value={project.projectLocation || ''}
+                          onChange={(e) => handleProjectChange(index, projIndex, 'projectLocation', e.target.value)}
+                          className="w-full px-3 py-2 border rounded-md"
+                          placeholder="e.g., Dallas, TX (if different from job location)"
                         />
                       </div>
                       

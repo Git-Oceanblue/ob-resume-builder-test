@@ -169,6 +169,7 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
         responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities : (job.responsibilities ? [job.responsibilities] : []),
         projects: Array.isArray(job.projects) ? job.projects.map(project => ({
           projectName: project.projectName || '',
+          projectLocation: project.projectLocation || '',
           projectResponsibilities: Array.isArray(project.projectResponsibilities) ? project.projectResponsibilities : [],
           keyTechnologies: project.keyTechnologies || '',
           period: project.period || ''

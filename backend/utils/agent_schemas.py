@@ -100,6 +100,7 @@ class ResumeAgentSchemas:
                                         "type": "object",
                                         "properties": {
                                             "projectName": {"type": "string", "description": "Format as 'Project N: ProjectTitle/ Role' where N is descending number (Project 5, Project 4, etc.) with most recent project having highest number. Example: 'Project 4: RWE Datacenter-Transition/ Senior Database Administrator'"},
+                                            "projectLocation": {"type": "string", "description": "Location where this specific project was performed, if explicitly mentioned. Use same format as job location: 'City, State/Country'. Only include if project location is different from or specifically mentioned for this project."},
                                             "projectResponsibilities": {"type": "array", "items": {"type": "string"}, "description": "List of responsibilities and achievements specific to this project"},
                                             "keyTechnologies": {"type": "string", "description": "Technologies, tools, and skills used in this specific project"},
                                             "period": {"type": "string", "description": "Time period for this project using same format as workPeriod: 'MMM YYYY - MMM YYYY' with regular hyphen (-) character and single spaces. Should match or be within the overall workPeriod of the job."}

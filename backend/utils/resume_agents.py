@@ -40,13 +40,10 @@ def normalize_work_period(work_period: str) -> str:
     for full_month, abbrev in month_mapping.items():
         normalized = normalized.replace(full_month, abbrev)
     
-    # First handle known current position indicators
-    normalized = re.sub(r'\b(Present|Current|Now|Ongoing|Today|Currently)\b', 'Till Date', normalized, flags=re.IGNORECASE)
-    
-    # Then handle any remaining non-date words that are likely current position indicators
-    # Only if it doesn't look like a month name or year
-    if not re.search(r' - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})$', normalized):
-        normalized = re.sub(r' - [A-Za-z]+$', ' - Till Date', normalized)
+    # Handle any text after hyphen that contains no numeric digits - replace with "Till Date"
+    # If there are no digits in the text after hyphen, replace it with "Till Date"
+    if re.search(r' - [^0-9]*$', normalized):
+        normalized = re.sub(r' - [^0-9]*$', ' - Till Date', normalized)
     
     return normalized.strip()
 
