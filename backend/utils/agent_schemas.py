@@ -86,12 +86,12 @@ class ResumeAgentSchemas:
                                 "workPeriod": {
                                     "type": "string",
                                     "pattern": "^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4}$|^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} - Till Date$",
-                                    "description": "MUST be exact format: MMM YYYY - MMM YYYY (e.g., Jun 2024 - Sep 2025) or MMM YYYY - Till Date for current positions. Use 'Till Date' (not 'current' or 'present') for ongoing employment."
+                                    "description": "CRITICAL DATE FORMAT RULES - EXACT FORMAT REQUIRED: Use format 'MMM YYYY - MMM YYYY' (e.g., 'Jun 2024 - Sep 2025') or 'MMM YYYY - Till Date' for current positions. Use REGULAR HYPHEN (-) character, NOT em-dash (–) or en-dash (–). Use 3-letter month abbreviations: Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec. Single space before and after the hyphen. CORRECT EXAMPLES: 'Jun 2024 - Sep 2025' (regular hyphen with spaces), 'Mar 2023 - Till Date' (regular hyphen with spaces). The hyphen character MUST be the standard keyboard hyphen (-), not any other dash character."
                                 },
                                 "location": {
                                     "type": "string",
                                     "pattern": "^[A-Za-z\\s]+, [A-Za-z\\s]+$",
-                                    "description": "MUST be exact format: City, State/Country (e.g., Hyderabad, India or Dallas, TX). For US locations, use state abbreviations (TX, CA, NY, etc.)"
+                                    "description": "CRITICAL LOCATION FORMAT RULES - EXACT FORMAT REQUIRED: Use format 'City, State/Country' with COMMA and SINGLE SPACE. For US locations, use 2-letter state abbreviations (TX, CA, NY, FL, etc.). For international locations, use full country names. CORRECT EXAMPLES: 'Dallas, TX' (US with state abbreviation), 'New York, NY' (US with state abbreviation), 'Hyderabad, India' (international with full country), 'London, UK' (international with country code), 'Toronto, Canada' (international with full country). The format MUST include: City name + comma + single space + State abbreviation or Country name. Never use full state names for US locations."
                                 },
 
                                 "projects": {
@@ -102,7 +102,7 @@ class ResumeAgentSchemas:
                                             "projectName": {"type": "string", "description": "Format as 'Project N: ProjectTitle/ Role' where N is descending number (Project 5, Project 4, etc.) with most recent project having highest number. Example: 'Project 4: RWE Datacenter-Transition/ Senior Database Administrator'"},
                                             "projectResponsibilities": {"type": "array", "items": {"type": "string"}, "description": "List of responsibilities and achievements specific to this project"},
                                             "keyTechnologies": {"type": "string", "description": "Technologies, tools, and skills used in this specific project"},
-                                            "period": {"type": "string", "description": "Time period for this project, should match or be within the overall workPeriod of the job"}
+                                            "period": {"type": "string", "description": "Time period for this project using same format as workPeriod: 'MMM YYYY - MMM YYYY' with regular hyphen (-) character and single spaces. Should match or be within the overall workPeriod of the job."}
                                         }
                                     },
                                     "description": "CRITICAL: ONLY include this field if the resume explicitly mentions specific named projects for this job. If no projects are mentioned, return an empty array []. DO NOT create or invent projects. Look for clear project names, project titles, or project-specific sections in that specific job entry."
@@ -156,7 +156,7 @@ class ResumeAgentSchemas:
                                 "location": {
                                     "type": "string",
                                     "pattern": "^[A-Za-z\\s]+, [A-Za-z\\s]+$",
-                                    "description": "MUST be exact format: City, State/Country (e.g., Hyderabad, India or Austin, TX). For US locations, use state abbreviations (TX, CA, NY, etc.). Extract separately even if combined with school name."
+                                    "description": "CRITICAL LOCATION FORMAT RULES - EXACT FORMAT REQUIRED: Use format 'City, State/Country' with COMMA and SINGLE SPACE. For US locations, use 2-letter state abbreviations (TX, CA, NY, FL, etc.). For international locations, use full country names. CORRECT EXAMPLES: 'Austin, TX' (US with state abbreviation), 'Boston, MA' (US with state abbreviation), 'Mumbai, India' (international with full country). Extract separately even if combined with school name. The format MUST include: City name + comma + single space + State abbreviation or Country name."
                                 },
                                 "date": {"type": "string", "description": "Date of graduation or study period"},
                                 "wasAwarded": {"type": "boolean", "description": "Whether the degree was awarded it must be always 'yes', unless it is mentioned as 'no'"}

@@ -6,6 +6,7 @@ Simplified version with 6 specialized agents for parallel processing
 import asyncio
 import json
 import logging
+import re
 from datetime import datetime
 from typing import Dict, List, Any, Optional, AsyncGenerator
 from dataclasses import dataclass
@@ -17,6 +18,77 @@ from .token_logger import start_timing, log_cache_analysis
 from .chunk_resume import strip_bullet_prefix
 
 logger = logging.getLogger(__name__)
+
+def normalize_work_period(work_period: str) -> str:
+    """Normalize work period format to exact specification"""
+    if not work_period:
+        return work_period
+    
+    # Replace em-dash and en-dash with regular hyphen
+    normalized = work_period.replace('–', '-').replace('—', '-')
+    
+    # Fix spacing around hyphen
+    normalized = re.sub(r'\s*[-–—]\s*', ' - ', normalized)
+    
+    # Convert full month names to abbreviations
+    month_mapping = {
+        'January': 'Jan', 'February': 'Feb', 'March': 'Mar', 'April': 'Apr',
+        'May': 'May', 'June': 'Jun', 'July': 'Jul', 'August': 'Aug',
+        'September': 'Sep', 'October': 'Oct', 'November': 'Nov', 'December': 'Dec'
+    }
+    
+    for full_month, abbrev in month_mapping.items():
+        normalized = normalized.replace(full_month, abbrev)
+    
+    # First handle known current position indicators
+    normalized = re.sub(r'\b(Present|Current|Now|Ongoing|Today|Currently)\b', 'Till Date', normalized, flags=re.IGNORECASE)
+    
+    # Then handle any remaining non-date words that are likely current position indicators
+    # Only if it doesn't look like a month name or year
+    if not re.search(r' - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})$', normalized):
+        normalized = re.sub(r' - [A-Za-z]+$', ' - Till Date', normalized)
+    
+    return normalized.strip()
+
+def normalize_location(location: str) -> str:
+    """Normalize location format to exact specification"""
+    if not location:
+        return location
+    
+    # Remove extra spaces and normalize
+    normalized = ' '.join(location.split())
+    
+    # US state name to abbreviation mapping
+    state_mapping = {
+        'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
+        'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
+        'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
+        'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+        'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
+        'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+        'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH',
+        'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+        'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
+        'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY'
+    }
+    
+    # Convert full state names to abbreviations
+    for full_state, abbrev in state_mapping.items():
+        # Match full state name at the end after comma
+        pattern = r',\s*' + re.escape(full_state) + r'$'
+        normalized = re.sub(pattern, f', {abbrev}', normalized, flags=re.IGNORECASE)
+    
+    # Fix common formatting issues
+    # Handle missing comma: "Dallas TX" -> "Dallas, TX"
+    normalized = re.sub(r'^([A-Za-z\s]+)\s+([A-Z]{2})$', r'\1, \2', normalized)
+    
+    # Fix spacing around comma: "Dallas,TX" -> "Dallas, TX" or "Dallas , TX" -> "Dallas, TX"
+    normalized = re.sub(r'\s*,\s*', ', ', normalized)
+    
+    # Handle common separators: "Dallas-TX" or "Dallas|TX" -> "Dallas, TX"
+    normalized = re.sub(r'[-|]\s*', ', ', normalized)
+    
+    return normalized.strip()
 
 class AgentType(Enum):
     """Enumeration of available resume processing agents"""
@@ -177,17 +249,37 @@ CRITICAL PROJECT EXTRACTION RULES:
         
         elif self.agent_type == AgentType.EXPERIENCE and data.get('employmentHistory'):
             for job in data['employmentHistory']:
+                # Normalize work period format
+                if job.get('workPeriod'):
+                    job['workPeriod'] = normalize_work_period(job['workPeriod'])
+                
+                # Normalize location format
+                if job.get('location'):
+                    job['location'] = normalize_location(job['location'])
+                
                 if job.get('responsibilities'):
                     job['responsibilities'] = [strip_bullet_prefix(item) for item in job['responsibilities']]
                 if job.get('subsections'):
                     for subsection in job['subsections']:
                         if subsection.get('content'):
                             subsection['content'] = [strip_bullet_prefix(item) for item in subsection['content']]
+                if job.get('projects'):
+                    for project in job['projects']:
+                        # Normalize project period format
+                        if project.get('period'):
+                            project['period'] = normalize_work_period(project['period'])
+                        if project.get('projectResponsibilities'):
+                            project['projectResponsibilities'] = [strip_bullet_prefix(item) for item in project['projectResponsibilities']]
                 if job.get('clientProjects'):
                     for client_project in job['clientProjects']:
                         if client_project.get('responsibilities'):
                             client_project['responsibilities'] = [strip_bullet_prefix(item) for item in client_project['responsibilities']]
         
+        elif self.agent_type == AgentType.EDUCATION and data.get('education'):
+            for education in data['education']:
+                # Normalize location format
+                if education.get('location'):
+                    education['location'] = normalize_location(education['location'])
         
         return data
     
