@@ -1041,7 +1041,7 @@ const GeneratedResume = ({ resumeData, onBack }) => {
               },
               children: [
                 new TextRun({
-                  text: 'Technical Skills:',
+                  text: 'Key Technologies/Skills:',
                   bold: true,
                   size: 22,
                   color: '000000',
