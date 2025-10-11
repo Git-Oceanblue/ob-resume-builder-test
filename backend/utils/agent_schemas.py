@@ -163,7 +163,7 @@ class ResumeAgentSchemas:
                                 "wasAwarded": {"type": "boolean", "description": "Whether the degree was awarded it must be always 'yes', unless it is mentioned as 'no'"}
                             }
                         },
-                        "description": "CRITICAL SORTING REQUIREMENT: Education entries MUST be sorted in DESCENDING order by degree level (highest degree first). Degree hierarchy: PhD/JD (highest) → Masters (MS/MA/MBA/MTech/ME) → Bachelors (BS/BA/BTech/BE) → Associates (AA/AS) (lowest). If multiple degrees of same level, sort by date (most recent first)."
+                        "description": "CRITICAL SORTING AND STANDARDIZATION REQUIREMENTS: 1) Education entries MUST be sorted in ASCENDING order by degree level (lowest degree first). Degree hierarchy: Associates (AA/AS) (lowest) → Bachelors (BS/BA/BTech/BE/BCom) → Masters (MS/MA/MBA/MTech/ME/MCom) → PhD/JD (highest). If multiple degrees of same level, sort by date (oldest first). 2) STANDARDIZE degree abbreviations: Use 'BS' for all bachelor's degrees (BS/BTech/BE/BCom/BA), Use 'MS' for technical master's degrees (MS/MTech/ME), Keep specific abbreviations for: MBA, MCom, MA, PhD, JD, AA, AS."
                     }
                 },
                 "required": ["education"]
