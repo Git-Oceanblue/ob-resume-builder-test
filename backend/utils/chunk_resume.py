@@ -9,7 +9,7 @@ BULLET_PREFIX_PATTERN = re.compile(r'^\s*(?:--+|[-*\u2022\u2023\u25E6\u2043\u221
 def strip_bullet_prefix(text: str) -> str:
     stripped = text
     while True:
-        new_text = BULLET_PREFIX_PATTERN.sub('', stripped, count=1)
+        new_text = BULLET_PREFIX_PATTERN.sub('', stripped, count=1) 
         if new_text == stripped:
             break
         stripped = new_text
