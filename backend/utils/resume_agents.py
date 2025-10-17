@@ -200,7 +200,7 @@ CRITICAL PROJECT EXTRACTION RULES:
                 ],
                 tools=[{"type": "function", "function": self.schema}],
                 tool_choice={"type": "function", "function": {"name": self.schema["name"]}},
-                max_tokens=16,384,
+                max_tokens=16384,
                 temperature=0.1
             )
             
