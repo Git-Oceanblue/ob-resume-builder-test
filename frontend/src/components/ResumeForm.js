@@ -34,6 +34,12 @@ const ResumeForm = ({ initialData, onSubmit }) => {
     }
   }, [initialData]);
 
+<<<<<<< HEAD
+  // Handle form submission
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+=======
   const normalizeDegree = (degree = '') =>
     degree.toUpperCase().replace(/\./g, '').replace(/\s+/g, ' ').trim();
 
@@ -62,6 +68,7 @@ const ResumeForm = ({ initialData, onSubmit }) => {
       ...formData,
       education: sortedEducation
     });
+>>>>>>> b62f7a6 (bug fix for OB_RA_INC014)
   };
 
   // Handle form field changes
@@ -97,7 +104,11 @@ const ResumeForm = ({ initialData, onSubmit }) => {
           areaOfStudy: '',
           school: '',
           location: '',
+<<<<<<< HEAD
+          wasAwarded: false,
+=======
           wasAwarded: true,
+>>>>>>> b62f7a6 (bug fix for OB_RA_INC014)
           date: ''
         }
       ]
@@ -1500,4 +1511,8 @@ const ResumeForm = ({ initialData, onSubmit }) => {
   );
 };
 
+<<<<<<< HEAD
 export default ResumeForm; 
+=======
+export default ResumeForm; 
+>>>>>>> b62f7a6 (bug fix for OB_RA_INC014)
