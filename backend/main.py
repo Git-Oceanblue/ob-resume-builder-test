@@ -37,12 +37,20 @@ async def stream_resume_processing_endpoint(file: UploadFile = File(...)):
         temp_file_path = None
         suffix = Path(file.filename).suffix
         content = await file.read()
+        # ADD THIS: Check if file content is valid
+        if not content:
+            logger.error("❌ File content is empty")
+            raise HTTPException(status_code=400, detail="File is empty")
+        logger.info(f"✅ File read successfully: {len(content)} bytes")
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
             temp_file_path = temp_file.name
             temp_file.write(content)
-
+        logger.info(f"✅ Temp file created: {temp_file_path}")
         try:
             # Extract text from file - no timeout worries with Function URLs!
+            logger.info("🔄 Starting text extraction...")
+            extracted_text = extract_text_from_file(temp_file_path)
+            logger.info(f"✅ Text extracted: {len(extracted_text)} characters")
             extracted_text = extract_text_from_file(temp_file_path)
 
 

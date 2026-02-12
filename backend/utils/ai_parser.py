@@ -10,8 +10,9 @@ logger = logging.getLogger(__name__)
 
 api_key = os.getenv('OPENAI_API_KEY')
 if not api_key:
+    logger.error("❌ OPENAI_API_KEY environment variable is not set")
     raise ValueError("OPENAI_API_KEY environment variable is not set")
-
+logger.info(f"✅ OpenAI API key found: {api_key[:10]}...")
 client = AsyncOpenAI(api_key=api_key)
 
 async def stream_resume_processing(extracted_text: str) -> AsyncGenerator[Dict[str, Any], None]:
