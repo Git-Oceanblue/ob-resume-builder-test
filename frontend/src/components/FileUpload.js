@@ -83,10 +83,8 @@ const FileUpload = ({ onResumeDataExtracted, setLoading }) => {
       formData.append('file', file);
       
       // Simple fetch to process resume
-      const response = await fetch(`${API_BASE_URL}/api/stream-resume-processing`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(`${API_BASE_URL}/api/stream-resume-processing`, { method: "POST", body: formData });
+
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
