@@ -52,10 +52,24 @@ class ResumeAgentSchemas:
         """Schema for extracting professional summary and overview sections"""
         return {
             "name": "extract_professional_summary",
-            "description": "Extract professional summary, career overview, and profile sections",
+            "description": "Extract professional summary, career overview, and profile sections including professional title",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": (
+                        "Professional title/role of the person. EXTRACTION PRIORITY: "
+                        "1) First check for explicit 'Title:', 'Role:', or 'Position:' fields in the header section. "
+                        "2) If not found, extract from the FIRST sentence or opening phrase of the Professional Summary section "
+                        "(e.g., 'Result-driven Salesforce Administrator with 10+ years...' → extract 'Salesforce Administrator'). "
+                        "3) Look for career-defining statements like 'Experienced [Title]', '[Title] professional', 'Certified [Title]'. "
+                        "4) Extract the core professional identity/job title without modifiers unless they're essential "
+                        "(e.g., 'Senior' or 'Lead' can be kept, but remove phrases like 'with X years experience'). "
+                        "Examples: 'Senior Software Engineer', 'Salesforce Administrator', 'Database Administrator', 'Full Stack Developer'. "
+                        "IMPORTANT: Focus on the job title/role itself, not achievements or descriptions."
+                        )
+                    },
                     "professionalSummary": {
                         "type": "array",
                         "items": {"type": "string"},
