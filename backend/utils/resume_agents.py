@@ -464,63 +464,66 @@ class MultiAgentResumeProcessor:
         }
     
     def _combine_agent_results(self, results: List[AgentResult]) -> Dict[str, Any]:
-        """
-        Combine results from all agents into the expected resume structure
-        
-        Args:
-            results: List of successful agent results
-            
-        Returns:
-            Combined resume data in original format
-        """
-        # Initialize with default structure
         combined_data = {
             'name': '',
             'title': '',
             'requisitionNumber': '',
             'professionalSummary': [],
             'summarySections': [],
-            'subsections': [],  # For compatibility
+            'subsections': [],
             'employmentHistory': [],
             'education': [],
             'certifications': [],
             'technicalSkills': {},
             'skillCategories': []
         }
-        
-        # Merge data from each agent
+
+        header_title = ''
+        summary_title = ''
+
         for result in results:
             agent_data = result.data
-            
+
             if result.agent_type == AgentType.HEADER:
+                header_title = (agent_data.get('title') or '').strip()
                 combined_data.update({
                     'name': agent_data.get('name', ''),
-                    'title': agent_data.get('title', ''),
                     'requisitionNumber': agent_data.get('requisitionNumber', '')
                 })
-                
+
             elif result.agent_type == AgentType.SUMMARY:
+                summary_title = (agent_data.get('title') or '').strip()
                 combined_data.update({
                     'professionalSummary': agent_data.get('professionalSummary', []),
                     'summarySections': agent_data.get('summarySections', [])
                 })
-                # For compatibility
                 combined_data['subsections'] = combined_data['summarySections']
-                
+
             elif result.agent_type == AgentType.EXPERIENCE:
                 combined_data['employmentHistory'] = agent_data.get('employmentHistory', [])
-                
+
             elif result.agent_type == AgentType.EDUCATION:
                 combined_data['education'] = agent_data.get('education', [])
-                
+
             elif result.agent_type == AgentType.SKILLS:
                 combined_data.update({
                     'technicalSkills': agent_data.get('technicalSkills', {}),
                     'skillCategories': agent_data.get('skillCategories', [])
                 })
-                
+
             elif result.agent_type == AgentType.CERTIFICATIONS:
                 combined_data['certifications'] = agent_data.get('certifications', [])
-        
+
+        def normalize_title(value: str) -> str:
+            return re.sub(r'\s+', ' ', (value or '').strip()).lower()
+
+        n_header = normalize_title(header_title)
+        n_summary = normalize_title(summary_title)
+
+        if n_header and n_summary:
+            combined_data['title'] = header_title if n_header == n_summary else ''
+        else:
+            combined_data['title'] = header_title or summary_title or ''
+
         logger.info(f"✅ Combined data from {len(results)} agents successfully")
         return combined_data
