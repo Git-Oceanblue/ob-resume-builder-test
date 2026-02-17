@@ -24,20 +24,7 @@ class ResumeAgentSchemas:
                         "type": "string",
                         "description": "Full name of the person"
                     },
-                    "title": {
-                        "type": "string",
-                        "description": (
-                        "Professional title/role of the person. EXTRACTION PRIORITY: "
-                        "1) First check for explicit 'Title:', 'Role:', or 'Position:' fields in the header section. "
-                        "2) If not found, extract from the FIRST sentence or opening phrase of the Professional Summary section "
-                        "(e.g., 'Result-driven Salesforce Administrator with 10+ years...' → extract 'Salesforce Administrator'). "
-                        "3) Look for career-defining statements like 'Experienced [Title]', '[Title] professional', 'Certified [Title]'. "
-                        "4) Extract the core professional identity/job title without modifiers unless they're essential "
-                        "(e.g., 'Senior' or 'Lead' can be kept, but remove phrases like 'with X years experience'). "
-                        "Examples: 'Senior Software Engineer', 'Salesforce Administrator', 'Database Administrator', 'Full Stack Developer'. "
-                        "IMPORTANT: Focus on the job title/role itself, not achievements or descriptions."
-                    )
-                    },
+                    "title":{"Professional title/role of the person."},
                     "requisitionNumber": {
                         "type": "string",
                         "description": "Requisition number if mentioned in the resume"
@@ -59,15 +46,18 @@ class ResumeAgentSchemas:
                     "title": {
                         "type": "string",
                         "description": (
-                        "Professional title/role of the person. EXTRACTION PRIORITY: "
-                        "1) First check for explicit 'Title:', 'Role:', or 'Position:' fields in the header section. "
-                        "2) If not found, extract from the FIRST sentence or opening phrase of the Professional Summary section "
-                        "(e.g., 'Result-driven Salesforce Administrator with 10+ years...' → extract 'Salesforce Administrator'). "
-                        "3) Look for career-defining statements like 'Experienced [Title]', '[Title] professional', 'Certified [Title]'. "
-                        "4) Extract the core professional identity/job title without modifiers unless they're essential "
-                        "(e.g., 'Senior' or 'Lead' can be kept, but remove phrases like 'with X years experience'). "
-                        "Examples: 'Senior Software Engineer', 'Salesforce Administrator', 'Database Administrator', 'Full Stack Developer'. "
-                        "IMPORTANT: Focus on the job title/role itself, not achievements or descriptions."
+                            "Professional title/role of the person. EXTRACTION PRIORITY (STRICT ORDER): "
+                            "1) FIRST: Check HEADER SECTION for explicit 'Title:', 'Role:', or 'Position:' fields. "
+                            "2) SECOND: If not found in HEADER SECTION, check SUMMARY SECTION for the FIRST sentence or opening phrase "
+                            "(e.g., 'Result-driven Salesforce Administrator with 10+ years...' → extract 'Salesforce Administrator'). "
+                            "Look for career-defining statements like 'Experienced [Title]', '[Title] professional', 'Certified [Title]'. "
+                            "3) THIRD (FALLBACK): If both HEADER and SUMMARY sections are empty or do not contain a clear title, "
+                            "look at the FIRST JOB section provided and extract the job title/role from it as a last resort. "
+                            "Extract the core professional identity/job title without modifiers unless essential "
+                            "(e.g., 'Senior' or 'Lead' can be kept, but remove phrases like 'with X years experience'). "
+                            "Examples: 'Senior Software Engineer', 'Salesforce Administrator', 'Database Administrator'. "
+                            "Focus on the job title/role itself, not achievements or descriptions. "
+                            "IMPORTANT: You have access to all three sections. Check them in order and extract from the first one that has a title."
                         )
                     },
                     "professionalSummary": {
