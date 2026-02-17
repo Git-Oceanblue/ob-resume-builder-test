@@ -443,23 +443,10 @@ class MultiAgentResumeProcessor:
                 
                 # For header agent, also include some context from the beginning
                 if agent_type == AgentType.HEADER:
-                    # Include header, summary, and first employment for title extraction
-                    header_section = sections.get('header', '')
-                    summary_section = sections.get('summary', '')
-                    experience_section = sections.get('experience', '')
-
-                    # Extract just the first job from experience for fallback
-                    first_job_text = ''
-                    if experience_section:
-                        # Get approximately first 500 chars of experience (first job)
-                        first_job_text = experience_section[:500]
-
-                    combined_context = f"HEADER SECTION:\n{header_section}\n\n"
-                    combined_context += f"SUMMARY SECTION:\n{summary_section}\n\n"
-                    combined_context += f"FIRST JOB (for title fallback only):\n{first_job_text}"
-
-                    agent_inputs[agent_type] = combined_context
-                    strategy[agent_type.value] = 'multi_section_for_title'
+                    # Include first 1000 characters for better context
+                    context_text = raw_text[:1000]
+                    agent_inputs[agent_type] = f"{context_text}\n\n--- HEADER SECTION ---\n{chunked_content}"
+                    strategy[agent_type.value] = 'chunked_with_context'
                 else:
                     agent_inputs[agent_type] = chunked_content
                     strategy[agent_type.value] = 'chunked_section'
