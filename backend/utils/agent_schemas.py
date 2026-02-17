@@ -26,7 +26,17 @@ class ResumeAgentSchemas:
                     },
                     "title": {
                         "type": "string",
-                        "description": "Professional title of the person"
+                        "description": (
+                        "Professional title/role of the person. EXTRACTION PRIORITY: "
+                        "1) First check for explicit 'Title:', 'Role:', or 'Position:' fields in the header section. "
+                        "2) If not found, extract from the FIRST sentence or opening phrase of the Professional Summary section "
+                        "(e.g., 'Result-driven Salesforce Administrator with 10+ years...' → extract 'Salesforce Administrator'). "
+                        "3) Look for career-defining statements like 'Experienced [Title]', '[Title] professional', 'Certified [Title]'. "
+                        "4) Extract the core professional identity/job title without modifiers unless they're essential "
+                        "(e.g., 'Senior' or 'Lead' can be kept, but remove phrases like 'with X years experience'). "
+                        "Examples: 'Senior Software Engineer', 'Salesforce Administrator', 'Database Administrator', 'Full Stack Developer'. "
+                        "IMPORTANT: Focus on the job title/role itself, not achievements or descriptions."
+                    )
                     },
                     "requisitionNumber": {
                         "type": "string",
