@@ -51,7 +51,6 @@ async def stream_resume_processing_endpoint(file: UploadFile = File(...)):
             logger.info("🔄 Starting text extraction...")
             extracted_text = extract_text_from_file(temp_file_path)
             logger.info(f"✅ Text extracted: {len(extracted_text)} characters")
-            extracted_text = extract_text_from_file(temp_file_path)
 
 
             async def generate_stream():

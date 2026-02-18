@@ -1,14 +1,20 @@
 # when running use this command in the local :
 import os
 import io
+import re
 import logging
+import zipfile
 
 from typing import List
+from xml.etree import ElementTree as ET
 
 from PyPDF2 import PdfReader
 from docx import Document
 
 logger = logging.getLogger(__name__)
+
+WORD_NS = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+DOCX_PAGE_NUMBER_PATTERN = re.compile(r"^(?:page\s*)?\d+(?:\s*of\s*\d+)?$", re.IGNORECASE)
 
 # ----------------------------
 # Optional PDF extraction deps
@@ -122,8 +128,91 @@ def _extract_text_from_pdf(file_bytes: bytes) -> str:
 # ----------------------------
 # DOCX extractor
 # ----------------------------
-def _extract_text_from_docx(file_bytes: bytes) -> str:
-    """Extract text from DOCX including paragraphs + tables."""
+def _normalize_docx_line(text: str) -> str:
+    """Normalize whitespace while preserving visible text content."""
+    normalized = (text or "").replace("\xa0", " ")
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return normalized
+
+
+def _is_layout_noise_line(text: str) -> bool:
+    """Filter common page-number artifacts from headers/footers."""
+    return bool(DOCX_PAGE_NUMBER_PATTERN.fullmatch((text or "").strip()))
+
+
+def _extract_lines_from_docx_xml_part(xml_bytes: bytes) -> List[str]:
+    """
+    Extract visible paragraph lines from a DOCX XML part.
+    Captures text in normal paragraphs, tables, and text boxes.
+    """
+    root = ET.fromstring(xml_bytes)
+    lines: List[str] = []
+
+    for paragraph in root.findall(".//w:p", WORD_NS):
+        chunks: List[str] = []
+        for node in paragraph.iter():
+            tag = node.tag.rsplit("}", 1)[-1] if "}" in node.tag else node.tag
+
+            if tag == "t" and node.text:
+                chunks.append(node.text)
+            elif tag == "tab":
+                chunks.append(" ")
+            elif tag in {"br", "cr"}:
+                chunks.append("\n")
+
+        joined = "".join(chunks)
+        for line in joined.split("\n"):
+            normalized = _normalize_docx_line(line)
+            if normalized and not _is_layout_noise_line(normalized):
+                lines.append(normalized)
+
+    return lines
+
+
+def _extract_text_from_docx_xml(file_bytes: bytes) -> str:
+    """
+    Extract DOCX text from XML parts (headers + body + footers).
+    This recovers text frequently missed by python-docx (e.g., text boxes).
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(file_bytes), "r") as docx_zip:
+            part_names = set(docx_zip.namelist())
+
+            headers = sorted(
+                name for name in part_names if name.startswith("word/header") and name.endswith(".xml")
+            )
+            footers = sorted(
+                name for name in part_names if name.startswith("word/footer") and name.endswith(".xml")
+            )
+
+            ordered_parts: List[str] = []
+            ordered_parts.extend(headers)
+            if "word/document.xml" in part_names:
+                ordered_parts.append("word/document.xml")
+            ordered_parts.extend(footers)
+
+            all_lines: List[str] = []
+            for part_name in ordered_parts:
+                all_lines.extend(_extract_lines_from_docx_xml_part(docx_zip.read(part_name)))
+
+            # Remove only immediate duplicates (common with repeated line wraps).
+            deduped_lines: List[str] = []
+            previous_key = None
+            for line in all_lines:
+                key = line.casefold()
+                if key == previous_key:
+                    continue
+                deduped_lines.append(line)
+                previous_key = key
+
+            return "\n".join(deduped_lines).strip()
+    except Exception as e:
+        logger.warning(f"DOCX XML extraction failed: {e}")
+        return ""
+
+
+def _extract_text_from_docx_with_python_docx(file_bytes: bytes) -> str:
+    """Extract text from DOCX using python-docx paragraphs + tables."""
     try:
         doc = Document(io.BytesIO(file_bytes))
         parts: List[str] = []
@@ -147,8 +236,26 @@ def _extract_text_from_docx(file_bytes: bytes) -> str:
 
         return "\n".join(parts).strip()
     except Exception as e:
-        logger.warning(f"DOCX extraction failed: {e}")
+        logger.warning(f"DOCX python-docx extraction failed: {e}")
         return ""
+
+
+def _extract_text_from_docx(file_bytes: bytes) -> str:
+    """
+    Extract text from DOCX using XML-aware extraction first, then fallback.
+    """
+    text = _extract_text_from_docx_xml(file_bytes)
+    if text:
+        logger.info("✅ DOCX extracted successfully using XML parser")
+        return text
+
+    text = _extract_text_from_docx_with_python_docx(file_bytes)
+    if text:
+        logger.info("✅ DOCX extracted successfully using python-docx")
+        return text
+
+    logger.warning("❌ All DOCX extraction methods failed")
+    return ""
 
 
 # ----------------------------
@@ -190,7 +297,7 @@ def extract_text_from_file(file_path: str) -> str:
             text = _extract_text_from_pdf(file_bytes)
 
         elif file_extension == ".docx":
-            logger.info("🔄 Extracting DOCX (python-docx paragraphs + tables)...")
+            logger.info("🔄 Extracting DOCX (XML-aware parser -> python-docx fallback)...")
             text = _extract_text_from_docx(file_bytes)
 
         elif file_extension == ".txt":

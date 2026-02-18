@@ -19,6 +19,46 @@ from .chunk_resume import strip_bullet_prefix
 
 logger = logging.getLogger(__name__)
 
+
+def normalize_person_name(name: str) -> str:
+    """
+    Normalize extracted person name by removing non-name metadata.
+    Example: 'Sai Mohana Sravani Kusam (Preferred Name: Sravani Kusam)' -> 'Sai Mohana Sravani Kusam'
+    """
+    if not name:
+        return ""
+
+    normalized = " ".join((name or "").split())
+
+    # Remove explicit leading labels.
+    normalized = re.sub(r"^\s*(?:name|candidate name|full name)\s*[:\-]\s*", "", normalized, flags=re.IGNORECASE)
+
+    metadata_keywords = (
+        r"preferred\s*name|pronouns?|a\.?\s*k\.?\s*a\.?|aka|also known as|legal name|nickname|maiden name"
+    )
+
+    # Remove bracketed metadata chunks such as "(Preferred Name: ...)".
+    normalized = re.sub(
+        rf"\s*[\(\[\{{][^)\]\}}]*(?<!\w)(?:{metadata_keywords})(?!\w)[^)\]\}}]*[\)\]\}}]\s*",
+        " ",
+        normalized,
+        flags=re.IGNORECASE
+    )
+
+    # Remove inline metadata tails (if model outputs them outside brackets).
+    normalized = re.sub(
+        rf"(?<!\w)(?:{metadata_keywords})(?!\w)(?:\s*[:\-])?\s+.*$",
+        "",
+        normalized,
+        flags=re.IGNORECASE
+    )
+
+    # Keep only characters typically seen in names.
+    normalized = re.sub(r"[^A-Za-z\.\-'\s]", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip(" -,:;")
+
+    return normalized.strip()
+
 def normalize_work_period(work_period: str) -> str:
     """Normalize work period format to exact specification"""
     if not work_period:
@@ -486,8 +526,10 @@ class MultiAgentResumeProcessor:
 
             if result.agent_type == AgentType.HEADER:
                 header_title = (agent_data.get('title') or '').strip()
+                raw_name = (agent_data.get('name') or '').strip()
+                cleaned_name = normalize_person_name(raw_name)
                 combined_data.update({
-                    'name': agent_data.get('name', ''),
+                    'name': cleaned_name or raw_name,
                     'requisitionNumber': agent_data.get('requisitionNumber', '')
                 })
 

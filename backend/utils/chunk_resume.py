@@ -6,6 +6,59 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_SECTIONS = ["header", "summary", "experience", "education", "skills", "certifications"]
 
+WORK_DATE_RANGE_PATTERN = re.compile(
+    r"(?i)\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|"
+    r"sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(?:19|20)\d{2}\s*[-–—]\s*"
+    r"(?:present|current|till\s+date|"
+    r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|"
+    r"sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(?:19|20)\d{2})\b"
+)
+
+SECTION_HEADER_ALIASES = {
+    "summary": [
+        "summary",
+        "professional summary",
+        "profile",
+        "professional profile",
+        "career summary",
+        "summary of qualifications",
+        "objective",
+        "career objective"
+    ],
+    "experience": [
+        "experience",
+        "work experience",
+        "professional experience",
+        "employment history",
+        "work history"
+    ],
+    "education": [
+        "education",
+        "academic background",
+        "educational background",
+        "qualifications"
+    ],
+    "skills": [
+        "skills",
+        "skill set",
+        "technical skills",
+        "technical skill set",
+        "technical proficiency",
+        "technical proficiencies",
+        "key skills",
+        "core competencies",
+        "competencies",
+        "skills summary"
+    ],
+    "certifications": [
+        "certifications",
+        "certification",
+        "licenses",
+        "certificates",
+        "professional certifications"
+    ]
+}
+
 def chunk_resume_from_bold_headings(raw_text: str, expected_sections: Optional[List[str]] = None) -> Dict[str, Any]:
 
     if raw_text is None:
@@ -45,6 +98,15 @@ def chunk_resume_from_bold_headings(raw_text: str, expected_sections: Optional[L
     # Sort + de-dup
     matches = sorted(matches, key=lambda m: m["line_start"])
     matches = _dedupe_matches(matches)
+
+    # Heuristic: infer experience start if header is absent but job date ranges exist.
+    if "experience" in expected_sections and not any(m["section_key"] == "experience" for m in matches):
+        inferred_experience = _infer_experience_match(raw_text, matches)
+        if inferred_experience:
+            matches.append(inferred_experience)
+            matches = sorted(matches, key=lambda m: m["line_start"])
+            matches = _dedupe_matches(matches)
+            logger.info("Inferred experience section from job-date patterns.")
 
     # Header section = before first heading
     first = matches[0]
@@ -105,17 +167,34 @@ def chunk_resume_from_bold_headings(raw_text: str, expected_sections: Optional[L
 
 def _detect_headers(raw_text: str, expected_sections: List[str]) -> List[Dict[str, Any]]:
     """
-    Strict header detection: only match if the entire line is the header (plus optional numbering and colon).
+    Strict-but-flexible header detection:
+    - Matches only standalone heading lines
+    - Supports common resume heading aliases
     This prevents false splits like 'Certified Professional Scrum Master ...'
     """
-    patterns = []
+    bullet_chars = r"\u2022\u2023\u25E6\u2043\u2219\u00B7"
+    line_prefix = rf"\s*(?:\*{{1,2}}\s*)?(?:[-*{bullet_chars}]+\s*)?(?:\d+\s*[\.\)]\s*)?"
+
+    section_patterns: List[Dict[str, Any]] = []
     for sec in expected_sections:
-        # Match 1. Summary / 1) Summary / Summary / SUMMARY / Summary:
-        # Entire line only.
-        patterns.append((
-            sec,
-            re.compile(rf"^\s*(?:\d+\s*[\.\)]\s*)?{re.escape(sec)}\s*:?\s*$", re.IGNORECASE)
-        ))
+        aliases = SECTION_HEADER_ALIASES.get(sec, [sec])
+        alias_pattern = "|".join(re.escape(alias.strip()) for alias in aliases if alias and alias.strip())
+        if not alias_pattern:
+            continue
+
+        section_patterns.append({
+            "section_key": sec,
+            # Standalone line heading: "Summary", "Summary:", "1) Summary", "**Summary**"
+            "standalone": re.compile(
+                rf"^{line_prefix}(?:{alias_pattern})\s*(?:[:|\-])?(?:\s*\*{{1,2}})?\s*$",
+                re.IGNORECASE
+            ),
+            # Inline heading: "Education: Bachelor of Technology ..."
+            "inline": re.compile(
+                rf"^{line_prefix}(?:{alias_pattern})\s*[:|\-]\s*(?P<content>\S.*?)(?:\s*\*{{1,2}})?\s*$",
+                re.IGNORECASE
+            )
+        })
 
     matches = []
     pos = 0
@@ -124,10 +203,21 @@ def _detect_headers(raw_text: str, expected_sections: List[str]) -> List[Dict[st
         line_end = pos + len(line)
         line_no_newline = line.rstrip("\r\n")
 
-        for sec, pat in patterns:
-            if pat.match(line_no_newline):
+        for pattern_info in section_patterns:
+            inline_match = pattern_info["inline"].match(line_no_newline)
+            if inline_match:
                 matches.append({
-                    "section_key": sec,
+                    "section_key": pattern_info["section_key"],
+                    "line_start": line_start,
+                    "line_end": line_end,
+                    # Include text after delimiter on same line in section content.
+                    "content_start": line_start + inline_match.start("content")
+                })
+                break
+
+            if pattern_info["standalone"].match(line_no_newline):
+                matches.append({
+                    "section_key": pattern_info["section_key"],
                     "line_start": line_start,
                     "line_end": line_end,
                     # content starts after full header line (including newline)
@@ -171,8 +261,51 @@ def _dedupe_matches(matches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
+def _infer_experience_match(raw_text: str, matches: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """
+    Infer experience section when explicit header is missing.
+    Uses common employment date-range patterns (e.g., 'Aug 2024 - Current').
+    """
+    if not matches:
+        return None
 
-import re
+    # Only infer when other structured sections exist.
+    if not any(m["section_key"] in {"skills", "education"} for m in matches):
+        return None
+
+    # Start searching after first detected heading line to avoid header/contact text.
+    lower_bound = min(m["line_end"] for m in matches)
+
+    # Prefer inferring experience before education/certifications if those are explicitly detected.
+    trailing_bounds = [
+        m["line_start"] for m in matches if m["section_key"] in {"education", "certifications"}
+    ]
+    upper_bound = min(trailing_bounds) if trailing_bounds else len(raw_text)
+
+    pos = 0
+    candidate_lines: List[Dict[str, int]] = []
+    for line in raw_text.splitlines(keepends=True):
+        line_start = pos
+        line_end = pos + len(line)
+        line_no_newline = line.rstrip("\r\n")
+
+        if line_start >= lower_bound and line_start < upper_bound:
+            if WORK_DATE_RANGE_PATTERN.search(line_no_newline):
+                candidate_lines.append({"line_start": line_start, "line_end": line_end})
+
+        pos = line_end
+
+    if not candidate_lines:
+        return None
+
+    first = candidate_lines[0]
+    return {
+        "section_key": "experience",
+        "line_start": first["line_start"],
+        "line_end": first["line_end"],
+        # Keep the line itself (job title + date range often on same line).
+        "content_start": first["line_start"]
+    }
 
 # ------------------------------------------------------------------
 # BACKWARD-COMPATIBILITY UTILITY (USED BY OTHER MODULES)
