@@ -76,6 +76,131 @@ const GeneratedResume = ({ resumeData }) => {
 
   const sortedEducation = sortEducation(resumeData.education || []);
 
+  const escapeRegExp = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // ─────────────────────────────────────────────────────────────
+  // CENTRALIZED HELPER: formatEmploymentLocation
+  //   India  → "City, India"          (no state)
+  //   USA    → "City, State"          (no country)
+  //   Other  → original string
+  //   Used in BOTH DOCX generation AND the on-screen preview
+  // ─────────────────────────────────────────────────────────────
+  const formatEmploymentLocation = (locationString = '') => {
+    const raw = typeof locationString === 'string' ? locationString : '';
+    const normalized = raw.replace(/\s+/g, ' ').trim();
+    if (!normalized) return '';
+
+    const parts = normalized
+      .split(',')
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    const isUSCountry = (value = '') => /\b(united states|united states of america|usa|u\.s\.a\.|us|u\.s\.)\b/i.test(value);
+    const isIndiaCountry = (value = '') => /\bindia\b/i.test(value);
+
+    // Check if India is present in any part
+    const hasIndia = parts.some(part => isIndiaCountry(part));
+    if (hasIndia) {
+      const city = parts[0] || '';
+      return city ? `${city}, India` : 'India';
+    }
+
+    // Check if USA is present in any part
+    const hasUS = parts.some(part => isUSCountry(part));
+    if (hasUS) {
+      const city = parts[0] || '';
+      let state = '';
+
+      // Determine state location based on position
+      if (parts.length >= 3 && isUSCountry(parts[parts.length - 1])) {
+        // Format: City, State, USA
+        state = parts[1] || '';
+      } else if (parts.length >= 2 && !isUSCountry(parts[1])) {
+        // Format: City, State (USA already filtered)
+        state = parts[1] || '';
+      }
+
+      if (city && state) return `${city}, ${state}`;
+      if (city) return city;
+      return normalized;
+    }
+
+    // For other countries, return as-is
+    return normalized;
+  };
+
+  // Pre-compile month pattern regex for performance
+  const MONTH_PATTERN = '(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
+  
+  // ─────────────────────────────────────────────────────────────
+  // CENTRALIZED HELPER: formatProjectTitle
+  //   - Cleans "Project N:" prefixes, embedded dates, and location text
+  //   - Adds "Project N:" prefix only when a job has MULTIPLE projects
+  //   - Used in BOTH DOCX generation AND the on-screen preview
+  // ─────────────────────────────────────────────────────────────
+  const formatProjectTitle = (project = {}, index = 0, totalProjects = 0) => {
+    // Support alternative project name fields that may come from different API shapes
+    const rawName = typeof project.projectName === 'string' && project.projectName
+      ? project.projectName
+      : (typeof project.title === 'string' && project.title
+          ? project.title
+          : (typeof project.name === 'string' && project.name
+              ? project.name
+              : (typeof project.projectTitle === 'string' ? project.projectTitle : '')));
+    const rawLocation = typeof project.projectLocation === 'string' ? project.projectLocation : '';
+    let cleanName = rawName.replace(/\s+/g, ' ').trim();
+
+    // Remove labels such as "Project 1:", "Project 2 -", "PROJECT 3 -".
+    cleanName = cleanName.replace(/^\s*project\s*\d*\s*[:\-–—]\s*/i, '');
+    cleanName = cleanName.replace(/^\s*project\s*\d+\s+/i, '');
+
+    // Remove embedded date ranges from project names.
+    const dateLikePatterns = [
+      new RegExp(`\\(?\\b${MONTH_PATTERN}\\.?\\s+\\d{4}\\s*[-–—]\\s*(?:${MONTH_PATTERN}\\.?\\s+\\d{4}|present|current|till\\s*date)\\b\\)?`, 'gi'),
+      /\(?\b\d{4}\s*[-–—]\s*(?:\d{4}|present|current)\b\)?/gi,
+      /\(?\b(?:0?[1-9]|1[0-2])\s*[/-]\s*\d{2,4}\s*[-–—]\s*(?:0?[1-9]|1[0-2])\s*[/-]\s*\d{2,4}\b\)?/gi
+    ];
+    dateLikePatterns.forEach((pattern) => {
+      cleanName = cleanName.replace(pattern, ' ');
+    });
+
+    // Remove location from name when same location is available separately.
+    const location = rawLocation.replace(/\s+/g, ' ').trim();
+    if (location) {
+      const escapedLocation = escapeRegExp(location);
+      const locationWithFlexibleCommas = location
+        .split(',')
+        .map(part => part.trim())
+        .filter(Boolean)
+        .map(part => escapeRegExp(part))
+        .join('\\s*,\\s*');
+
+      cleanName = cleanName.replace(new RegExp(`\\s*[-–—,:|]?\\s*${escapedLocation}\\s*`, 'ig'), ' ');
+      if (locationWithFlexibleCommas) {
+        cleanName = cleanName.replace(new RegExp(`\\s*[-–—,:|]?\\s*${locationWithFlexibleCommas}\\s*`, 'ig'), ' ');
+      }
+    }
+
+    // Final cleanup to avoid punctuation artifacts after removals.
+    cleanName = cleanName
+      .replace(/[([]\s*[)\]]/g, ' ')
+      .replace(/\s*[-–—,:|]\s*[-–—,:|]\s*/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/^[-–—,:|()\s]+|[-–—,:|()\s]+$/g, '')
+      .trim();
+
+    // If cleaning stripped everything, fall back to a reasonable portion of the original
+    // (first ~60 chars) so project names are never silently lost.
+    const baseName = cleanName
+      || (rawName.trim().length > 0 ? rawName.trim().slice(0, 60) : 'Project');
+
+    // Add "Project N:" prefix ONLY if there are multiple projects
+    if (totalProjects > 1) {
+      return `Project ${index + 1}: ${baseName}`;
+    }
+    return baseName;
+  };
+
   // Helper function to create education table
   const createEducationTable = (resumeData) => {
     const rows = [
@@ -682,6 +807,9 @@ const GeneratedResume = ({ resumeData }) => {
       const sortedEmploymentHistory = [...resumeData.employmentHistory];
 
       sortedEmploymentHistory.forEach((job, index) => {
+        const formattedJobLocation = formatEmploymentLocation(job.location || '');
+        const departmentOrSubRole = (job.department || job.subRole || '').trim();
+
         // Add spacing before each employment history except the first one
         if (index > 0) {
           paragraphs.push(
@@ -798,7 +926,7 @@ const GeneratedResume = ({ resumeData }) => {
                         alignment: AlignmentType.RIGHT,
                         children: [
                           new TextRun({
-                            text: job.location || '',
+                            text: formattedJobLocation,
                             color: '0F3E78',
                             size: 28,
                             bold: true,
@@ -813,19 +941,32 @@ const GeneratedResume = ({ resumeData }) => {
           })
         );
 
+        if (departmentOrSubRole) {
+          paragraphs.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: departmentOrSubRole,
+                  size: 22,
+                  color: '000000',
+                  font: "Calibri"
+                }),
+              ],
+            })
+          );
+        }
+
 
         // Projects
         if (job.projects && job.projects.length > 0) {
-
-
-          job.projects.forEach(project => {
+          const totalProjects = job.projects.length;
+          job.projects.forEach((project, projectIndex) => {
             // Project header with duration in same line (right-aligned)
-            let projectTitle = project.projectName || 'Project';
-            
-            // Add location to project title if projectLocation exists
-            if (project.projectLocation) {
-              projectTitle = `${projectTitle} - ${project.projectLocation}`;
-            }
+            const projectForTitle = {
+              ...project,
+              projectLocation: project.projectLocation || job.location || ''
+            };
+            const projectTitle = formatProjectTitle(projectForTitle, projectIndex, totalProjects);
 
             paragraphs.push(
               new Table({
@@ -879,7 +1020,7 @@ const GeneratedResume = ({ resumeData }) => {
                             },
                             children: [
                               new TextRun({
-                                text: project.period || '',
+                                text: '',
                                 bold: true,
                                 size: 22,
                                 color: '000000',
@@ -1587,54 +1728,69 @@ const GeneratedResume = ({ resumeData }) => {
           <section className="mb-6">
             <h2 className="text-xl font-semibold border-b-2 border-ocean-blue pb-2 mb-4 text-ocean-dark">Employment History</h2>
 
-            {resumeData.employmentHistory.map((job, index) => (
-              <div key={index} className="mb-5">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-lg">{job.companyName || 'Company Name'}</h3>
-                    <p className="font-medium">{job.roleName || 'Role'}</p>
+            {resumeData.employmentHistory.map((job, index) => {
+              const formattedJobLocation = formatEmploymentLocation(job.location || '');
+              const departmentOrSubRole = (job.department || job.subRole || '').trim();
+
+              return (
+                <div key={index} className="mb-6">
+                  {/* LINE 1: Company Name (left)  |  Employment Period (right) */}
+                  <div className="flex justify-between items-baseline">
+                    <h3 className="font-bold text-lg text-blue-900">{job.companyName || 'Company Name'}</h3>
+                    <span className="text-gray-700 font-semibold text-sm whitespace-nowrap ml-4">{job.workPeriod || ''}</span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-gray-600">{job.workPeriod || 'Period'}</p>
-                    <p className="text-gray-600">{job.location || 'Location'}</p>
+                  {/* LINE 2: Job Title (left)  |  Location (right) */}
+                  <div className="flex justify-between items-baseline">
+                    <p className="font-medium text-gray-800">{job.roleName || 'Role'}</p>
+                    <span className="text-gray-600 text-sm whitespace-nowrap ml-4">{formattedJobLocation || ''}</span>
                   </div>
-                </div>
+                  {/* LINE 3: Department / Sub-Role (if present) */}
+                  {departmentOrSubRole && (
+                    <p className="text-sm text-gray-700 mt-0.5">{departmentOrSubRole}</p>
+                  )}
 
 
-                {job.description && (
-                  <p className="my-2 text-gray-800">{job.description}</p>
-                )}
+                  {job.description && (
+                    <p className="my-2 text-gray-800">{job.description}</p>
+                  )}
 
-                {/* Projects */}
-                {job.projects && job.projects.length > 0 && (
-                  <div className="mt-3">
-                    <p className="font-medium mb-2">Projects:</p>
-                    {job.projects.map((project, projIndex) => (
-                      <div key={projIndex} className="border-l-2 border-blue-200 pl-4 mb-3 bg-blue-50 p-3 rounded">
-                        <h5 className="font-medium text-blue-800">
-                          {project.projectName || 'Project'}
-                          {project.projectLocation && ` - ${project.projectLocation}`}
-                        </h5>
-                        {project.period && (
-                          <p className="text-sm text-gray-600 mb-1">Duration: {project.period}</p>
-                        )}
-                        {project.keyTechnologies && (
-                          <p className="text-sm text-gray-600 mb-2">
-                            <span className="font-medium">Technologies: </span>
-                            {project.keyTechnologies}
-                          </p>
-                        )}
-                        {project.projectResponsibilities && project.projectResponsibilities.length > 0 && (
-                          <ul className="list-disc pl-5 space-y-1">
-                            {project.projectResponsibilities.map((resp, respIndex) => (
-                              <li key={respIndex} className="text-gray-800 text-sm">{resp}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  {/* Projects */}
+                  {job.projects && job.projects.length > 0 && (
+                    <div className="mt-3">
+                      {job.projects.map((project, projIndex) => {
+                        const totalProjects = job.projects.length;
+                        const projectForTitle = {
+                          ...project,
+                          projectLocation: project.projectLocation || job.location || ''
+                        };
+                        const projectTitle = formatProjectTitle(projectForTitle, projIndex, totalProjects);
+
+                        return (
+                          <div key={projIndex} className="border-l-2 border-blue-200 pl-4 mb-3 bg-blue-50 p-3 rounded">
+                            {/* Project name (left) | Period (right) — dates NEVER next to project name inline */}
+                            <div className="flex justify-between items-baseline gap-4 mb-1">
+                              <h5 className="font-semibold text-blue-900">
+                                {projectTitle}
+                              </h5>
+                            </div>
+                            {project.keyTechnologies && (
+                              <p className="text-sm text-gray-600 mb-2">
+                                <span className="font-medium">Technologies: </span>
+                                {project.keyTechnologies}
+                              </p>
+                            )}
+                            {project.projectResponsibilities && project.projectResponsibilities.length > 0 && (
+                              <ul className="list-disc pl-5 space-y-1">
+                                {project.projectResponsibilities.map((resp, respIndex) => (
+                                  <li key={respIndex} className="text-gray-800 text-sm">{resp}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                 {job.responsibilities && job.responsibilities.length > 0 && (
                   <div className="mt-2">
@@ -1672,8 +1828,9 @@ const GeneratedResume = ({ resumeData }) => {
 
 
 
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </section>
         )}
 

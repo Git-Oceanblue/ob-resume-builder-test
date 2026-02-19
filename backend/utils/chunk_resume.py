@@ -27,9 +27,11 @@ SECTION_HEADER_ALIASES = {
     ],
     "experience": [
         "experience",
+        "job experience",
         "work experience",
         "professional experience",
         "employment history",
+        "job history",
         "work history"
     ],
     "education": [
@@ -53,6 +55,8 @@ SECTION_HEADER_ALIASES = {
     "certifications": [
         "certifications",
         "certification",
+        "technical certifications",
+        "technical certification",
         "licenses",
         "certificates",
         "professional certifications"
@@ -118,6 +122,7 @@ def chunk_resume_from_bold_headings(raw_text: str, expected_sections: Optional[L
     else:
         output_header = None
 
+    section_slices: Dict[str, List[str]] = {}
     integrity_check: Dict[str, Dict[str, Any]] = {}
     integrity_warnings: List[str] = []
 
@@ -130,17 +135,25 @@ def chunk_resume_from_bold_headings(raw_text: str, expected_sections: Optional[L
 
         raw_slice = raw_text[start:end]
         extracted = raw_slice.strip()
-        output[sec] = extracted if extracted else None
+        if extracted:
+            section_slices.setdefault(sec, []).append(extracted)
 
         raw_trim = raw_slice.strip()
         status = "ok" if len(extracted) == len(raw_trim) else "warn"
-
-        integrity_check[sec] = {
-            "raw_slice_chars": len(raw_slice),
-            "raw_slice_trimmed_chars": len(raw_trim),
-            "extracted_chars": len(extracted),
-            "status": status
-        }
+        existing = integrity_check.get(sec, {
+            "raw_slice_chars": 0,
+            "raw_slice_trimmed_chars": 0,
+            "extracted_chars": 0,
+            "segment_count": 0,
+            "status": "ok"
+        })
+        existing["raw_slice_chars"] += len(raw_slice)
+        existing["raw_slice_trimmed_chars"] += len(raw_trim)
+        existing["extracted_chars"] += len(extracted)
+        existing["segment_count"] += 1
+        if existing["status"] == "ok" and status != "ok":
+            existing["status"] = "warn"
+        integrity_check[sec] = existing
 
         # Boundary sanity: if warn, keep warning (no destructive adjustments)
         if status != "ok":
@@ -148,6 +161,13 @@ def chunk_resume_from_bold_headings(raw_text: str, expected_sections: Optional[L
                 f"{sec}: extracted_chars({len(extracted)}) != raw_slice_trimmed_chars({len(raw_trim)}). "
                 "Possible boundary mismatch."
             )
+
+    # Merge repeated section blocks instead of overwriting so no matched content is dropped.
+    for sec in expected_sections:
+        if sec == "header":
+            continue
+        chunks = section_slices.get(sec, [])
+        output[sec] = "\n\n".join(chunks) if chunks else None
 
     result: Dict[str, Any] = {}
     if "header" in expected_sections:
