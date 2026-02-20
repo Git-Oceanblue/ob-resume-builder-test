@@ -1,16 +1,12 @@
-"""
-Agent Schema Definitions for Resume Processing
-Modular, maintainable function schemas for specialized AI agents
-"""
-
 from typing import Dict, Any
+
 
 class ResumeAgentSchemas:
     """
     Centralized schema definitions for resume processing agents.
     Each schema is focused on a specific resume section for optimal extraction.
     """
-    
+
     @staticmethod
     def get_header_agent_schema() -> Dict[str, Any]:
         """Schema for extracting personal information and header details"""
@@ -22,21 +18,21 @@ class ResumeAgentSchemas:
                 "properties": {
                     "name": {
                         "type": "string",
-                        "description": "Full name of the person"
+                        "description": "Full name of the person. Extract ONLY the name - no titles, emails, phone numbers."
                     },
                     "title": {
                         "type": "string",
-                        "description": "Professional title of the person"
+                        "description": "Professional title of the person (e.g., 'Senior Software Engineer', 'QA Analyst')"
                     },
                     "requisitionNumber": {
                         "type": "string",
-                        "description": "Requisition number if mentioned in the resume"
+                        "description": "Requisition number if explicitly mentioned in the resume"
                     }
                 },
                 "required": ["name"]
             }
         }
-    
+
     @staticmethod
     def get_summary_agent_schema() -> Dict[str, Any]:
         """Schema for extracting professional summary and overview sections"""
@@ -53,15 +49,27 @@ class ResumeAgentSchemas:
                     "professionalSummary": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Array of professional summary paragraphs and bullet points exactly as written. Each paragraph or bullet point should be a separate array item. Include EVERY point without exception."
+                        "description": (
+                            "Array of professional summary paragraphs and bullet points EXACTLY as written. "
+                            "Each paragraph or bullet point is a SEPARATE array item. "
+                            "Include EVERY point without exception - do NOT truncate or summarize. "
+                            "Preserve original wording faithfully."
+                        )
                     },
                     "summarySections": {
                         "type": "array",
                         "items": {
                             "type": "object",
                             "properties": {
-                                "title": {"type": "string", "description": "The title of the subsection, only include explicitly labeled subsections"},
-                                "content": {"type": "array", "items": {"type": "string"}, "description": "Bullet points or paragraphs within this subsection"}
+                                "title": {
+                                    "type": "string",
+                                    "description": "The title of the subsection - ONLY include explicitly labeled subsections"
+                                },
+                                "content": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "Bullet points or paragraphs within this subsection, each as a separate item"
+                                }
                             }
                         },
                         "description": "Only include explicitly labeled subsections with clear titles"
@@ -70,10 +78,9 @@ class ResumeAgentSchemas:
                 "required": ["professionalSummary"]
             }
         }
-    
+
     @staticmethod
     def get_experience_agent_schema() -> Dict[str, Any]:
-        """Schema for extracting employment history and work experience"""
         return {
             "name": "extract_employment_history",
             "description": "Extract complete employment history with all job details",
@@ -82,42 +89,209 @@ class ResumeAgentSchemas:
                 "properties": {
                     "employmentHistory": {
                         "type": "array",
+                        "description": (
+                            "MANDATORY: Complete employment history with ALL jobs and details preserved exactly "
+                            "as written. Every single job entry MUST be included - missing even one job is "
+                            "unacceptable."
+                        ),
                         "items": {
                             "type": "object",
                             "properties": {
-                                "companyName": {"type": "string", "description": "Name of the company. If clients are mentioned, format as 'CompanyName (Client1, Client2, Client3)' with all client names separated by commas"},
-                                "roleName": {"type": "string", "description": "Job title or role"},
+
+                                # ── Company / Role ────────────────────────────────────────
+                                "companyName": {
+                                    "type": "string",
+                                    "description": (
+                                        "Name of the company. If clients are mentioned, format as "
+                                        "'CompanyName (Client1, Client2, Client3)' with all client names "
+                                        "separated by commas."
+                                    )
+                                },
+                                "roleName": {
+                                    "type": "string",
+                                    "description": "Job title or role exactly as stated in the resume."
+                                },
+
+                                # ── Dates ────────────────────────────────────────────────
                                 "workPeriod": {
                                     "type": "string",
-                                    "pattern": "^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4}$|^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} - Till Date$",
-                                    "description": "MANDATORY 3-LETTER MONTH FORMAT: NEVER use full month names like 'January', 'February', etc. ALWAYS use ONLY 3-letter abbreviations: Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec. Format: 'MMM YYYY - MMM YYYY' or 'MMM YYYY - Till Date'. Use regular hyphen (-) with single spaces. EXAMPLES: 'Jun 2024 - Sep 2025', 'Mar 2023 - Till Date'. FORBIDDEN: 'January 2024', 'February 2025', 'Sept 2024'."
+                                    "pattern": (
+                                        "^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} - "
+                                        "(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4}$|"
+                                        "^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} - Till Date$"
+                                    ),
+                                    "description": (
+                                        "MANDATORY 3-LETTER MONTH + 4-DIGIT YEAR FORMAT.\n"
+                                        "NEVER use full month names like 'January', 'February', 'September', etc.\n"
+                                        "ALWAYS use ONLY these 3-letter abbreviations: "
+                                        "Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec.\n"
+                                        "Format MUST be: 'MMM YYYY - MMM YYYY'  OR  'MMM YYYY - Till Date'\n"
+                                        "Use regular hyphen (-) with single space on each side.\n"
+                                        "CORRECT examples: 'Jun 2024 - Sep 2025', 'Mar 2023 - Till Date'\n"
+                                        "FORBIDDEN: 'January 2024', 'February 2025', 'Sept 2024', 'Mar 24'"
+                                    )
                                 },
+
+                                # ── Location ─────────────────────────────────────────────
                                 "location": {
                                     "type": "string",
                                     "pattern": "^[A-Za-z\\s]+, [A-Za-z\\s]+$",
-                                    "description": "CRITICAL LOCATION FORMAT RULES - EXACT FORMAT REQUIRED: Use format 'City, State/Country' with COMMA and SINGLE SPACE. For US locations, use 2-letter state abbreviations (TX, CA, NY, FL, etc.). For international locations, use full country names. CORRECT EXAMPLES: 'Dallas, TX' (US with state abbreviation), 'New York, NY' (US with state abbreviation), 'Hyderabad, India' (international with full country), 'London, UK' (international with country code), 'Toronto, Canada' (international with full country). The format MUST include: City name + comma + single space + State abbreviation or Country name. Never use full state names for US locations."
+                                    "description": (
+                                        "CRITICAL LOCATION FORMAT: 'City, State/Country' with COMMA + SINGLE SPACE.\n"
+                                        "USA: use 2-letter state abbreviation.  CORRECT: 'Dallas, TX', 'New York, NY'\n"
+                                        "India: use ONLY 'City, India' – DO NOT include state codes like 'KA', 'TN', 'MH'.\n"
+                                        "  CORRECT: 'Hyderabad, India'   WRONG: 'Hyderabad, Telangana, India'\n"
+                                        "Other: 'City, CountryName'. CORRECT: 'London, UK', 'Toronto, Canada'\n\n"
+                                        "EMBEDDED LOCATION RULE: If the job location is NOT listed separately but IS "
+                                        "embedded in the company name (e.g. 'IBM India Pvt Ltd, Hyderabad, India'), "
+                                        "extract the city and country from the company name.\n"
+                                        "EXAMPLE: Company='IBM India Pvt Ltd, Hyderabad, India' → location='Hyderabad, India'\n"
+                                        "If no location can be found, leave this field empty."
+                                    )
                                 },
 
+                                # ── Projects ─────────────────────────────────────────────
                                 "projects": {
                                     "type": "array",
+                                    "description": (
+                                        "🚨 CRITICAL EXPLICIT-PROJECT RULE 🚨\n\n"
+                                        "ONLY include projects if the resume text contains EXPLICIT project names, "
+                                        "project titles, or clearly demarcated project sections.\n\n"
+                                        "DO NOT invent or infer projects from general responsibilities.\n"
+                                        "DO NOT convert bullet points into projects.\n"
+                                        "DO NOT create projects from vague initiatives or phrases like "
+                                        "'worked on multiple initiatives'.\n\n"
+                                        "EXPLICIT = resume literally says 'Project X', 'Engagement Y', "
+                                        "'Initiative Z' with a dedicated name.\n"
+                                        "NOT EXPLICIT = resume says 'Worked on API development'.\n\n"
+                                        "If NO explicitly named projects → return empty array [].\n\n"
+                                        "When projects DO exist:\n"
+                                        "  • Extract ALL of them – missing a project is a data-loss error.\n"
+                                        "  • Number them in DESCENDING order: most recent project = highest number.\n"
+                                        "    Example: 3 projects → 'Project 3: ...', 'Project 2: ...', 'Project 1: ...'"
+                                    ),
                                     "items": {
                                         "type": "object",
                                         "properties": {
-                                            "projectName": {"type": "string", "description": "Format as 'Project N: ProjectTitle/ Role' where N is descending number (Project 5, Project 4, etc.) with most recent project having highest number. Example: 'Project 4: RWE Datacenter-Transition/ Senior Database Administrator'"},
-                                            "projectLocation": {"type": "string", "description": "Location where this specific project was performed, if explicitly mentioned. Use same format as job location: 'City, State/Country'. Only include if project location is different from or specifically mentioned for this project."},
-                                            "projectResponsibilities": {"type": "array", "items": {"type": "string"}, "description": "List of responsibilities and achievements specific to this project"},
-                                            "keyTechnologies": {"type": "string", "description": "Technologies, tools, and skills used in this specific project"},
-                                            "period": {"type": "string", "description": "MANDATORY 3-LETTER MONTH FORMAT: Use ONLY 3-letter abbreviations: Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec. Format: 'MMM YYYY - MMM YYYY' with regular hyphen (-). NEVER use full month names. EXAMPLES: 'Jun 2024 - Sep 2024', 'Mar 2023 - Till Date'."}
+
+                                            "projectName": {
+                                                "type": "string",
+                                                "description": (
+                                                    "MANDATORY FORMAT: 'Project N: ProjectTitle / Role'\n"
+                                                    "Rules:\n"
+                                                    "  • N is the descending project number (most-recent = highest)\n"
+                                                    "  • Use a colon (:) after 'Project N'\n"
+                                                    "  • Use ' / ' (space-slash-space) before the role\n"
+                                                    "  • If role is unknown, omit the slash and role\n\n"
+                                                    "CORRECT: 'Project 3: Data Pipeline Optimization / Senior DBA'\n"
+                                                    "CORRECT: 'Project 1: E-Commerce Platform'\n"
+                                                    "WRONG:   'Project 3:DataPipeline/DBA'  (no spaces)\n"
+                                                    "WRONG:   'Data Pipeline Optimization'  (no Project prefix)\n"
+                                                    "WRONG:   'Project Data Pipeline'       (no number or colon)"
+                                                )
+                                            },
+
+                                            "projectLocation": {
+                                                "type": "string",
+                                                "description": (
+                                                    "Location where this specific project was performed, ONLY if "
+                                                    "explicitly mentioned and different from the job location. "
+                                                    "Same format as job location: 'City, State/Country'."
+                                                )
+                                            },
+
+                                            "projectResponsibilities": {
+                                                "type": "array",
+                                                "items": {"type": "string"},
+                                                "description": (
+                                                    "List of responsibilities and achievements specific to this project. "
+                                                    "Extract ALL bullet points – do NOT truncate. "
+                                                    "Preserve original wording; do not summarize."
+                                                )
+                                            },
+
+                                            "projectDescription": {
+                                                "type": "string",
+                                                "description": (
+                                                    "One-sentence description of what this project delivered or involved. "
+                                                    "Infer from the first or most descriptive responsibility bullet if "
+                                                    "no explicit description is labeled. Keep to 1-2 sentences."
+                                                )
+                                            },
+                                            "keyTechnologies": {
+                                                "type": "string",
+                                                "description": (
+                                                    "MANDATORY: Comma-separated list of all technologies, tools, platforms, "
+                                                    "and frameworks used in THIS project.\n"
+                                                    "INFERENCE RULE: If there is no explicit 'Technologies:' label, "
+                                                    "EXTRACT and INFER technologies from the responsibility bullet points. "
+                                                    "Scan every bullet for: tool names, platform names, language names, "
+                                                    "API names, cloud platforms, frameworks, etc.\n\n"
+                                                    "EXAMPLES to extract from bullets:\n"
+                                                    "  'using Triggers, Apex classes, LWC, Aura components' "
+                                                    "→ 'Apex Triggers, Apex Classes, LWC, Aura Components'\n"
+                                                    "  'integrations using SOAP and REST API' → 'SOAP, REST API'\n"
+                                                    "  'using Data Loader' → 'Data Loader'\n"
+                                                    "  'deploy via Change Sets' → 'Change Sets'\n\n"
+                                                    "ALWAYS populate this field – empty is not acceptable when bullets "
+                                                    "exist. Do not duplicate job-level tech here if job-level is populated."
+                                                )
+                                            },
+
+                                            "period": {
+                                                "type": "string",
+                                                "description": (
+                                                    "MANDATORY 3-LETTER MONTH FORMAT for this project's duration.\n"
+                                                    "Use ONLY 3-letter abbreviations: "
+                                                    "Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec.\n"
+                                                    "Format: 'MMM YYYY - MMM YYYY'  OR  'MMM YYYY - Till Date'\n"
+                                                    "CRITICAL: This MUST be the project-specific date range – not a copy "
+                                                    "of the job's workPeriod. If the project has no distinct dates, "
+                                                    "leave this field EMPTY rather than duplicating the job period.\n"
+                                                    "CORRECT: 'Jun 2023 - Sep 2023'\n"
+                                                    "FORBIDDEN: copying job workPeriod verbatim into this field"
+                                                )
+                                            }
                                         }
-                                    },
-                                    "description": "CRITICAL: ONLY include this field if the resume explicitly mentions specific named projects for this job. If no projects are mentioned, return an empty array []. DO NOT create or invent projects. Look for clear project names, project titles, or project-specific sections in that specific job entry."
+                                    }
                                 },
+
+                                # ── Responsibilities ─────────────────────────────────────
                                 "responsibilities": {
                                     "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "CRITICAL: If projects exist for this job, leave this array EMPTY. Only include responsibilities when NO projects are mentioned for this job. When projects exist, all work details should be captured in project-specific fields instead."
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "description": (
+                                        "🚨 CRITICAL RULE 🚨: If this job has ANY projects listed above, "
+                                        "leave this array COMPLETELY EMPTY [].\n\n"
+                                        "Only populate when NO projects are present for this job.\n\n"
+                                        "When populating:\n"
+                                        "  • Extract ALL responsibilities – do NOT truncate after 2-3 items.\n"
+                                        "  • Maximum 8 items; each under 400 characters.\n"
+                                        "  • Preserve original wording – do not summarize or merge bullets.\n\n"
+                                        "RULE:  projects exist  →  responsibilities = []\n"
+                                        "RULE:  no projects     →  responsibilities = [all bullets]"
+                                    )
                                 },
-                                "keyTechnologies": {"type": "string", "description": "CRITICAL: If projects exist for this job, leave this field EMPTY. Only include technologies when NO projects are mentioned for this job. When projects exist, all technologies should be captured in project-specific fields instead."},
+
+                                # ── Job-level tech ───────────────────────────────────────
+                                "keyTechnologies": {
+                                    "type": "string",
+                                    "description": (
+                                        "🚨 CRITICAL RULE 🚨: If this job has ANY projects listed above, "
+                                        "leave this field COMPLETELY EMPTY (empty string '').\n\n"
+                                        "Only populate when NO projects are present for this job.\n"
+                                        "When projects exist, all technology info belongs in each project's "
+                                        "keyTechnologies field.\n\n"
+                                        "RULE:  projects exist  →  keyTechnologies = ''\n"
+                                        "RULE:  no projects     →  keyTechnologies = 'list of technologies'\n\n"
+                                        "VIOLATION: filling both job-level AND project-level tech causes "
+                                        "duplicate data in the final resume."
+                                    )
+                                },
+
+                                # ── Subsections ──────────────────────────────────────────
                                 "subsections": {
                                     "type": "array",
                                     "items": {
@@ -127,59 +301,109 @@ class ResumeAgentSchemas:
                                             "content": {"type": "array", "items": {"type": "string"}}
                                         }
                                     },
-                                    "description": "Only include explicitly labeled subsections within this job. Do not create artificial subsections from standalone bullet points."
+                                    "description": (
+                                        "Only include explicitly labeled subsections within this job entry. "
+                                        "Do not create artificial subsections from standalone bullet points."
+                                    )
                                 }
                             }
-                        },
-                        "description": "MANDATORY: Complete employment history with ALL jobs and details preserved exactly as written. Every single job entry MUST be included - missing even one job is unacceptable."
+                        }
                     }
                 },
                 "required": ["employmentHistory"]
             }
         }
-    
+
     @staticmethod
     def get_education_agent_schema() -> Dict[str, Any]:
         """Schema for extracting education and academic background"""
         return {
             "name": "extract_education_history",
-            "description": "Extract complete education history and academic qualifications with mandatory degree standardization and proper sorting.",
+            "description": (
+                "Extract complete education history and academic qualifications with mandatory "
+                "degree standardization and proper sorting."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "education": {
                         "type": "array",
+                        "description": (
+                            "CRITICAL REQUIREMENTS:\n"
+                            "1) MANDATORY SORTING: Education entries MUST be sorted in ASCENDING order by "
+                            "degree level (lowest degree first).\n"
+                            "   Exact order: AA/AS (lowest) → BS (bachelors) → MS/MA/MBA/MCom (masters) "
+                            "→ PhD/JD (highest).\n"
+                            "   If multiple degrees of same level, sort by date (oldest first).\n\n"
+                            "2) MANDATORY STANDARDIZATION: All bachelor's degrees "
+                            "(BTech/BE/BCom/BA/Bachelor) MUST become 'BS'. "
+                            "All technical master's degrees (MTech/ME/Master) MUST become 'MS'. "
+                            "Keep MBA, MA, MCom, PhD, JD, AA, AS as-is. NO EXCEPTIONS."
+                        ),
                         "items": {
                             "type": "object",
                             "properties": {
                                 "degree": {
-                                    "type": "string", 
-                                    "description": "MANDATORY DEGREE STANDARDIZATION - Convert degrees to standard abbreviations: BTech/BE/BCom/BA/Bachelor → 'BS', MTech/ME/Master → 'MS', MBA → 'MBA', MA → 'MA', MCom → 'MCom', PhD/Doctorate → 'PhD', JD → 'JD', AA → 'AA', AS → 'AS'. EXAMPLES: 'Bachelor of Technology' → 'BS', 'B.Tech' → 'BS', 'Master of Technology' → 'MS', 'M.Tech' → 'MS'."
+                                    "type": "string",
+                                    "description": (
+                                        "MANDATORY DEGREE STANDARDIZATION:\n"
+                                        "BTech/BE/BCom/BA/Bachelor → 'BS'\n"
+                                        "MTech/ME/Master of Technology/Master of Engineering → 'MS'\n"
+                                        "MBA → 'MBA'   MA → 'MA'   MCom → 'MCom'\n"
+                                        "PhD/Doctorate → 'PhD'   JD → 'JD'   AA → 'AA'   AS → 'AS'\n"
+                                        "EXAMPLES: 'Bachelor of Technology' → 'BS', 'B.Tech' → 'BS', "
+                                        "'Master of Technology' → 'MS', 'M.Tech' → 'MS'."
+                                    )
                                 },
-                                "areaOfStudy": {"type": "string", "description": "Field of study or major"},
-                                "school": {"type": "string", "description": "Educational institution name ONLY - exclude location information"},
+                                "areaOfStudy": {
+                                    "type": "string",
+                                    "description": "Field of study or major"
+                                },
+                                "school": {
+                                    "type": "string",
+                                    "description": "Educational institution name ONLY – exclude location information"
+                                },
                                 "location": {
                                     "type": "string",
                                     "pattern": "^[A-Za-z\\s]+, [A-Za-z\\s]+$",
-                                    "description": "CRITICAL LOCATION FORMAT RULES - EXACT FORMAT REQUIRED: Use format 'City, State/Country' with COMMA and SINGLE SPACE. For US locations, use 2-letter state abbreviations (TX, CA, NY, FL, etc.). For international locations, use full country names. CORRECT EXAMPLES: 'Austin, TX' (US with state abbreviation), 'Boston, MA' (US with state abbreviation), 'Mumbai, India' (international with full country). Extract separately even if combined with school name. The format MUST include: City name + comma + single space + State abbreviation or Country name."
+                                    "description": (
+                                        "CRITICAL LOCATION FORMAT: 'City, State/Country' with COMMA + SINGLE SPACE.\n"
+                                        "USA: 2-letter state abbreviation. CORRECT: 'Austin, TX', 'Boston, MA'\n"
+                                        "India: 'City, India' – NO state codes. CORRECT: 'Mumbai, India'\n"
+                                        "Extract separately even if combined with school name."
+                                    )
                                 },
-                                "date": {"type": "string", "description": "Date of graduation or study period"},
-                                "wasAwarded": {"type": "boolean", "description": "Whether the degree was awarded it must be always 'yes', unless it is mentioned as 'no'"}
+                                "date": {
+                                    "type": "string",
+                                    "description": (
+                                        "Date of graduation or study period. "
+                                        "Use 3-letter month abbreviations and 4-digit years where applicable. "
+                                        "Example: 'May 2019' or '2015 - 2019'."
+                                    )
+                                },
+                                "wasAwarded": {
+                                    "type": "boolean",
+                                    "description": (
+                                        "Whether the degree was awarded. Must be true unless the resume explicitly "
+                                        "states the degree was NOT completed/awarded."
+                                    )
+                                }
                             }
-                        },
-                        "description": "CRITICAL REQUIREMENTS: 1) MANDATORY SORTING: Education entries MUST be sorted in ASCENDING order by degree level (lowest degree first). Exact order: AA/AS (lowest) → BS (bachelors) → MS/MA/MBA/MCom (masters) → PhD/JD (highest). If multiple degrees of same level, sort by date (oldest first). 2) MANDATORY STANDARDIZATION: All bachelor's degrees (BTech/BE/BCom/BA/Bachelor) MUST become 'BS'. All technical master's degrees (MTech/ME/Master) MUST become 'MS'. Keep MBA, MA, MCom, PhD, JD, AA, AS as-is. NO EXCEPTIONS."
+                        }
                     }
                 },
                 "required": ["education"]
             }
         }
-    
+
     @staticmethod
     def get_skills_agent_schema() -> Dict[str, Any]:
-        """Schema for extracting technical skills and competencies"""
         return {
             "name": "extract_technical_skills",
-            "description": "Extract technical skills, competencies, and skill categories with MANDATORY hierarchical structure preservation",
+            "description": (
+                "Extract technical skills, competencies, and skill categories with MANDATORY "
+                "hierarchical structure preservation"
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -189,6 +413,17 @@ class ResumeAgentSchemas:
                     },
                     "skillCategories": {
                         "type": "array",
+                        "description": (
+                            "MANDATORY: Extract ALL skill categories exactly as written.\n\n"
+                            "COMMON FORMAT: 'Category Name: Skill1, Skill2, Skill3'\n"
+                            "  - The text BEFORE the colon is the categoryName\n"
+                            "  - The comma-separated items AFTER the colon are the skills list\n"
+                            "  EXAMPLE: 'SalesForce CRM: Apex, VisualForce, LWC' →\n"
+                            "    categoryName='SalesForce CRM', skills=['Apex', 'VisualForce', 'LWC']\n\n"
+                            "EXTRACT EVERY CATEGORY – missing even one category is unacceptable.\n"
+                            "PRESERVE original category names exactly (do not abbreviate or rename).\n"
+                            "Split comma-separated skill lists into individual array items."
+                        ),
                         "items": {
                             "type": "object",
                             "properties": {
@@ -205,17 +440,21 @@ class ResumeAgentSchemas:
                                     }
                                 }
                             }
-                        },
-                        "description": "MANDATORY: Preserve hierarchical structure exactly as written. When skills are grouped under main headings, create nested structure: main heading becomes categoryName, items under it become subCategories. Never create separate categories for items that belong under a main heading. Maintain parent-child relationships as they appear in the resume text."
+                        }
                     }
                 },
                 "required": []
             }
         }
-    
+
     @staticmethod
     def get_certifications_agent_schema() -> Dict[str, Any]:
-        """Schema for extracting certifications and professional licenses"""
+        """
+        Schema for extracting certifications and professional licenses.
+
+        BUG FIX #14: Each certification field is explicitly described to prevent
+        the LLM from combining all content into the 'name' field.
+        """
         return {
             "name": "extract_certifications",
             "description": "Extract certifications, licenses, and professional credentials",
@@ -224,21 +463,88 @@ class ResumeAgentSchemas:
                 "properties": {
                     "certifications": {
                         "type": "array",
+                        "description": (
+                            "Extract EACH certification as a SEPARATE object.\n\n"
+                            "TABLE FORMAT HANDLING (CRITICAL):\n"
+                            "The certifications section may come from a table. The extracted text "
+                            "will contain TABLE COLUMN HEADERS as plain lines:\n"
+                            "  'Certification', 'Issued By', 'Date Obtained (MM/YY)', "
+                            "'Certification Number (If Applicable)', 'Expiration Date (If Applicable)'\n"
+                            "These are COLUMN HEADERS – DO NOT treat them as certification names.\n"
+                            "Skip any line that exactly matches one of these header labels.\n\n"
+                            "DASH/HYPHEN VALUES:\n"
+                            "A '-' or '--' in the text means the field is NOT PROVIDED/EMPTY.\n"
+                            "Do NOT extract '-' as a certification name, issuer, date, or number.\n\n"
+                            "IDENTIFICATION RULE:\n"
+                            "A real certification name is a phrase like 'AWS Certified Solutions Architect', "
+                            "'Salesforce Certified Platform Developer I', 'PMP', 'CISSP', etc.\n"
+                            "It appears AFTER all the column header lines.\n\n"
+                            "DO NOT combine multiple certifications into one entry.\n"
+                            "DO NOT put issuer, date, or number into the name field.\n"
+                            "Only extract EXPLICITLY mentioned certifications."
+                        ),
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string", "description": "Name of the certification"},
-                                "issuedBy": {"type": "string", "description": "Organization that issued the certification"},
-                                "dateObtained": {"type": "string", "description": "Date when certification was obtained"},
-                                "certificationNumber": {"type": "string", "description": "Certification ID or number if available"},
-                                "expirationDate": {"type": "string", "description": "Expiration date if applicable"}
+
+                                "name": {
+                                    "type": "string",
+                                    "description": (
+                                        "CERTIFICATION NAME ONLY – the title of the certification, nothing else.\n\n"
+                                        "CORRECT: 'AWS Certified Solutions Architect'\n"
+                                        "CORRECT: 'Salesforce Certified Platform Developer I'\n"
+                                        "WRONG:   'AWS Certified Solutions Architect Issued by Amazon Jun 2023'\n"
+                                        "  (that incorrectly adds issuer and date into the name field)\n\n"
+                                        "DO NOT include: issuer name, issue date, cert number, expiry date."
+                                    )
+                                },
+
+                                "issuedBy": {
+                                    "type": "string",
+                                    "description": (
+                                        "The organization or body that issued the certification.\n"
+                                        "Extract from phrases like 'Issued by:', 'From:', 'by:', "
+                                        "or parenthetical attribution.\n"
+                                        "EXAMPLE: 'AWS Certified (Amazon Web Services)' → 'Amazon Web Services'\n"
+                                        "If not mentioned, leave EMPTY."
+                                    )
+                                },
+
+                                "dateObtained": {
+                                    "type": "string",
+                                    "description": (
+                                        "Date when the certification was obtained.\n"
+                                        "Preferred format: 'MMM YYYY' (3-letter month + 4-digit year).\n"
+                                        "CORRECT: 'Jun 2023'\n"
+                                        "Extract from labels: 'Obtained:', 'Date:', 'Issued:', etc.\n"
+                                        "If not mentioned, leave EMPTY."
+                                    )
+                                },
+
+                                "certificationNumber": {
+                                    "type": "string",
+                                    "description": (
+                                        "Certification ID or credential number.\n"
+                                        "EXAMPLES: 'SAA-C03', 'PMP#123456', 'License: XYZ789'\n"
+                                        "Extract from labels: 'Certification Number:', 'ID:', 'License:', etc.\n"
+                                        "If not mentioned, leave EMPTY."
+                                    )
+                                },
+
+                                "expirationDate": {
+                                    "type": "string",
+                                    "description": (
+                                        "Expiration date of the certification, if applicable.\n"
+                                        "Preferred format: 'MMM YYYY' (3-letter month + 4-digit year).\n"
+                                        "CORRECT: 'Jun 2026'\n"
+                                        "Extract from labels: 'Expires:', 'Expiration:', 'Valid until:', etc.\n"
+                                        "If no expiration or not mentioned, leave EMPTY."
+                                    )
+                                }
                             }
-                        },
-                        "description": "All certifications with details preserved exactly as written. Only extract explicitly mentioned certifications."
+                        }
                     }
                 },
                 "required": ["certifications"]
             }
         }
-    
-    ##shale

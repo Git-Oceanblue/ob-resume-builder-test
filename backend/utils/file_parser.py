@@ -14,13 +14,15 @@ from docx import Document
 logger = logging.getLogger(__name__)
 
 WORD_NS = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
-DOCX_PAGE_NUMBER_PATTERN = re.compile(r"^(?:page\s*)?\d+(?:\s*of\s*\d+)?$", re.IGNORECASE)
+DOCX_PAGE_NUMBER_PATTERN = re.compile(
+    r"^(?:page\s*)?\d+(?:\s*of\s*\d+)?$", re.IGNORECASE
+)
 
 # ----------------------------
 # Optional PDF extraction deps
 # ----------------------------
 try:
-    import pdfplumber  # better PDF text extraction than PyPDF2 for many layouts
+    import pdfplumber
     HAS_PDFPLUMBER = True
 except ImportError:
     HAS_PDFPLUMBER = False
@@ -33,9 +35,47 @@ except ImportError:
     HAS_OCR = False
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# FIX #11: Whitespace normalisation
+# ─────────────────────────────────────────────────────────────────────────────
+
+def normalize_whitespace(text: str) -> str:
+    """
+    FIX #11: Aggressively normalise extracted text whitespace.
+
+    Operations (in order):
+      1. Replace tabs with a single space.
+      2. Replace non-breaking spaces (\\xa0) with regular spaces.
+      3. Collapse multiple consecutive spaces within a line to one space.
+      4. Strip leading/trailing spaces from every line.
+      5. Collapse runs of 3+ consecutive blank lines to 2 blank lines
+         (preserving paragraph structure).
+
+    This prevents issues like:
+        "John    Doe        Senior    Engineer"
+        → "John Doe Senior Engineer"
+    """
+    if not text:
+        return text
+
+    # Step 1 & 2: tabs and non-breaking spaces → regular space
+    text = text.replace('\t', ' ').replace('\xa0', ' ')
+
+    # Step 3 & 4: collapse spaces and strip each line
+    lines = text.split('\n')
+    lines = [re.sub(r' +', ' ', line).strip() for line in lines]
+    text = '\n'.join(lines)
+
+    # Step 5: at most two consecutive blank lines (paragraph break)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+
+    return text
+
+
 # ----------------------------
 # PDF extractors
 # ----------------------------
+
 def _extract_text_from_pdf_with_pdfplumber(file_bytes: bytes) -> str:
     """Extract text using pdfplumber (often best for complex layouts)."""
     if not HAS_PDFPLUMBER:
@@ -48,7 +88,9 @@ def _extract_text_from_pdf_with_pdfplumber(file_bytes: bytes) -> str:
                 page_text = page.extract_text()
                 if page_text and page_text.strip():
                     text_parts.append(page_text)
-                logger.info(f"📄 pdfplumber page {page_idx}: {len(page_text or '')} chars")
+                logger.info(
+                    f"📄 pdfplumber page {page_idx}: {len(page_text or '')} chars"
+                )
     except Exception as e:
         logger.warning(f"pdfplumber extraction failed: {e}")
         return ""
@@ -65,7 +107,9 @@ def _extract_text_from_pdf_with_pypdf2(file_bytes: bytes) -> str:
             page_text = page.extract_text() or ""
             if page_text.strip():
                 text_parts.append(page_text)
-            logger.info(f"📄 PyPDF2 page {page_idx}: {len(page_text)} chars")
+            logger.info(
+                f"📄 PyPDF2 page {page_idx}: {len(page_text)} chars"
+            )
     except Exception as e:
         logger.warning(f"PyPDF2 extraction failed: {e}")
         return ""
@@ -128,6 +172,7 @@ def _extract_text_from_pdf(file_bytes: bytes) -> str:
 # ----------------------------
 # DOCX extractor
 # ----------------------------
+
 def _normalize_docx_line(text: str) -> str:
     """Normalize whitespace while preserving visible text content."""
     normalized = (text or "").replace("\xa0", " ")
@@ -179,10 +224,12 @@ def _extract_text_from_docx_xml(file_bytes: bytes) -> str:
             part_names = set(docx_zip.namelist())
 
             headers = sorted(
-                name for name in part_names if name.startswith("word/header") and name.endswith(".xml")
+                name for name in part_names
+                if name.startswith("word/header") and name.endswith(".xml")
             )
             footers = sorted(
-                name for name in part_names if name.startswith("word/footer") and name.endswith(".xml")
+                name for name in part_names
+                if name.startswith("word/footer") and name.endswith(".xml")
             )
 
             ordered_parts: List[str] = []
@@ -193,7 +240,9 @@ def _extract_text_from_docx_xml(file_bytes: bytes) -> str:
 
             all_lines: List[str] = []
             for part_name in ordered_parts:
-                all_lines.extend(_extract_lines_from_docx_xml_part(docx_zip.read(part_name)))
+                all_lines.extend(
+                    _extract_lines_from_docx_xml_part(docx_zip.read(part_name))
+                )
 
             # Remove only immediate duplicates (common with repeated line wraps).
             deduped_lines: List[str] = []
@@ -217,13 +266,11 @@ def _extract_text_from_docx_with_python_docx(file_bytes: bytes) -> str:
         doc = Document(io.BytesIO(file_bytes))
         parts: List[str] = []
 
-        # Paragraphs
         for para in doc.paragraphs:
             t = (para.text or "").strip()
             if t:
                 parts.append(t)
 
-        # Tables
         for table in doc.tables:
             for row in table.rows:
                 row_cells: List[str] = []
@@ -261,22 +308,28 @@ def _extract_text_from_docx(file_bytes: bytes) -> str:
 # ----------------------------
 # TXT extractor
 # ----------------------------
+
 def _extract_text_from_txt(file_bytes: bytes) -> str:
     return file_bytes.decode("utf-8", errors="ignore").strip()
 
 
-# ============================================================
-# ✅ REQUIRED: keep this public function name & signature SAME
-# ============================================================
+# ─────────────────────────────────────────────────────────────────────────────
+# PUBLIC API (keep signature identical)
+# ─────────────────────────────────────────────────────────────────────────────
+
 def extract_text_from_file(file_path: str) -> str:
     """
-    Extract text from uploaded file using direct parsing (path-based API).
+    Extract text from an uploaded file using direct parsing (path-based API).
+
+    FIX #11: normalize_whitespace() is applied to all extracted text before
+    returning, ensuring no multi-space runs, tabs, or excessive blank lines
+    reach the chunking / LLM pipeline.
 
     Args:
         file_path: Path to the uploaded file
 
     Returns:
-        Extracted text content
+        Extracted and whitespace-normalised text content
     """
     file_extension = os.path.splitext(file_path)[1].lower()
     logger.info(f"🔍 Processing file: {file_path} (extension: {file_extension})")
@@ -291,13 +344,16 @@ def extract_text_from_file(file_path: str) -> str:
         with open(file_path, "rb") as f:
             file_bytes = f.read()
 
-        # Route by extension (same supported types)
+        if not file_bytes:
+            logger.error("❌ File content is empty")
+            raise ValueError("File is empty")
+
         if file_extension == ".pdf":
-            logger.info("🔄 Extracting PDF (pdfplumber -> PyPDF2 -> OCR fallback)...")
+            logger.info("🔄 Extracting PDF (pdfplumber → PyPDF2 → OCR fallback)...")
             text = _extract_text_from_pdf(file_bytes)
 
         elif file_extension == ".docx":
-            logger.info("🔄 Extracting DOCX (XML-aware parser -> python-docx fallback)...")
+            logger.info("🔄 Extracting DOCX (XML-aware parser → python-docx fallback)...")
             text = _extract_text_from_docx(file_bytes)
 
         elif file_extension == ".txt":
@@ -307,8 +363,11 @@ def extract_text_from_file(file_path: str) -> str:
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
-        logger.info(f"✅ Extraction successful - Text length: {len(text)} characters")
-        logger.info(f"📝 First 500 characters: {text[:500]}...")
+        # ✅ FIX #11: Normalise whitespace before handing to pipeline
+        text = normalize_whitespace(text)
+
+        logger.info(f"✅ Extraction + normalisation successful – {len(text)} characters")
+        logger.info(f"📝 First 500 chars: {text[:500]}...")
         return text
 
     except Exception as e:

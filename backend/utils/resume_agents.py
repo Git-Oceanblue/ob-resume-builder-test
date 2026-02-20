@@ -1,6 +1,18 @@
 """
 Multi-Agent Resume Processing System
 Simplified version with 6 specialized agents for parallel processing
+
+FIXES APPLIED:
+  BUG #3  - Duration duplication: enforce_project_period_dedup()
+  BUG #4  - Key technologies duplication: enforce_tech_responsibility_rules()
+  BUG #6  - Year-only date format: normalize_work_period() extended
+  BUG #7  - City/location India+USA rules: normalize_location() rewritten
+  BUG #8  - Name capitalization: normalize_person_name() title-casing added
+  BUG #9  - Section order: reorder_sections_to_standard() added
+  BUG #10 - Fabricated projects: validate_project_not_fabricated() added
+  BUG #11 - Whitespace: handled in file_parser.py (see that file)
+  BUG #12 - Month/year format validation: validate_date_format() added
+  BUG #14 - Cert field separation: extract_certification_fields() added
 """
 
 import asyncio
@@ -19,11 +31,19 @@ from .chunk_resume import strip_bullet_prefix
 
 logger = logging.getLogger(__name__)
 
+# ─────────────────────────────────────────────────────────────────────────────
+# NORMALIZATION HELPERS
+# ─────────────────────────────────────────────────────────────────────────────
 
 def normalize_person_name(name: str) -> str:
     """
-    Normalize extracted person name by removing non-name metadata.
-    Example: 'Sai Mohana Sravani Kusam (Preferred Name: Sravani Kusam)' -> 'Sai Mohana Sravani Kusam'
+    Normalize extracted person name by removing non-name metadata and
+    applying proper Title Case.
+
+    FIX #8: Added title-case conversion so names like 'sAI mOHANA' → 'Sai Mohana'
+
+    Example:
+        'sAI mOHANA sRAVANI (Preferred Name: Sravani Kusam)' → 'Sai Mohana Sravani'
     """
     if not name:
         return ""
@@ -31,10 +51,16 @@ def normalize_person_name(name: str) -> str:
     normalized = " ".join((name or "").split())
 
     # Remove explicit leading labels.
-    normalized = re.sub(r"^\s*(?:name|candidate name|full name)\s*[:\-]\s*", "", normalized, flags=re.IGNORECASE)
+    normalized = re.sub(
+        r"^\s*(?:name|candidate name|full name)\s*[:\-]\s*",
+        "",
+        normalized,
+        flags=re.IGNORECASE
+    )
 
     metadata_keywords = (
-        r"preferred\s*name|pronouns?|a\.?\s*k\.?\s*a\.?|aka|also known as|legal name|nickname|maiden name"
+        r"preferred\s*name|pronouns?|a\.?\s*k\.?\s*a\.?|aka|also known as|"
+        r"legal name|nickname|maiden name"
     )
 
     # Remove bracketed metadata chunks such as "(Preferred Name: ...)".
@@ -57,78 +83,552 @@ def normalize_person_name(name: str) -> str:
     normalized = re.sub(r"[^A-Za-z\.\-'\s]", " ", normalized)
     normalized = re.sub(r"\s+", " ", normalized).strip(" -,:;")
 
-    return normalized.strip()
+    # ✅ FIX #8: Apply Title Case to each word, handle apostrophe names (O'Brien)
+    words = normalized.split()
+    title_cased_words = []
+    for word in words:
+        if not word:
+            continue
+        if "'" in word:
+            parts = word.split("'")
+            parts = [p.capitalize() if p else p for p in parts]
+            title_cased_words.append("'".join(parts))
+        else:
+            title_cased_words.append(word.capitalize())
+
+    return " ".join(title_cased_words).strip()
+
 
 def normalize_work_period(work_period: str) -> str:
-    """Normalize work period format to exact specification"""
+    """
+    Normalize work period to: 'MMM YYYY - MMM YYYY'  or  'MMM YYYY - Till Date'
+
+    FIX #6: Added year-only format handling (e.g. '2024-2025', '2024/2025')
+    FIX #12: Added validation logging for non-standard month/year formats
+    """
     if not work_period:
         return work_period
-    
-    # Replace em-dash and en-dash with regular hyphen
-    normalized = work_period.replace('–', '-').replace('—', '-')
-    
-    # Replace "to" with hyphen (case insensitive)
-    normalized = re.sub(r'\s+to\s+', ' - ', normalized, flags=re.IGNORECASE)
-    
-    # Fix spacing around hyphen
-    normalized = re.sub(r'\s*[-–—]\s*', ' - ', normalized)
-    
-    # Convert full month names to abbreviations
+
+    # Step 1: Normalize dash/slash variants
+    normalized = (
+        work_period
+        .replace('–', '-')
+        .replace('—', '-')
+    )
+
+    # Step 2: Replace "to", "present", "current", "till now" with separator
+    normalized = re.sub(
+        r'\s+to\s+',
+        ' - ',
+        normalized,
+        flags=re.IGNORECASE
+    )
+
+    # Step 3: Normalize forward-slash as separator (year-only format like 2024/2025)
+    # Only do this when it looks like a date separator, not a date within a word
+    normalized = re.sub(r'(\d)\s*/\s*(\d)', r'\1 - \2', normalized)
+
+    # Step 4: Normalise spacing around hyphen separators
+    normalized = re.sub(r'\s*-\s*', ' - ', normalized)
+
+    # Step 5: Convert full month names to 3-letter abbreviations (FIX #12)
     month_mapping = {
-        'January': 'Jan', 'February': 'Feb', 'March': 'Mar', 'April': 'Apr',
-        'May': 'May', 'June': 'Jun', 'July': 'Jul', 'August': 'Aug',
-        'September': 'Sep', 'October': 'Oct', 'November': 'Nov', 'December': 'Dec'
+        'January': 'Jan', 'February': 'Feb', 'March': 'Mar',
+        'April': 'Apr', 'June': 'Jun', 'July': 'Jul',
+        'August': 'Aug', 'September': 'Sep', 'October': 'Oct',
+        'November': 'Nov', 'December': 'Dec'
+        # 'May' stays as 'May'
     }
-    
     for full_month, abbrev in month_mapping.items():
-        normalized = normalized.replace(full_month, abbrev)
-    
-    # Handle any text after hyphen that contains no numeric digits - replace with "Till Date"
-    # If there are no digits in the text after hyphen, replace it with "Till Date"
+        # Case-insensitive whole-word replacement
+        normalized = re.sub(
+            rf'\b{full_month}\b',
+            abbrev,
+            normalized,
+            flags=re.IGNORECASE
+        )
+
+    # FIX #6b: Handle bare year (education date like "2006")
+    bare_year = re.match(r'^\s*(\d{4})\s*$', normalized)
+    if bare_year:
+        return bare_year.group(1)
+
+    # FIX #6: Handle year-only formats like "2024 - 2025"
+    year_only_pattern = re.match(
+        r'^\s*(\d{4})\s*-\s*(\d{4})\s*$', normalized
+    )
+    if year_only_pattern:
+        start_yr, end_yr = year_only_pattern.group(1), year_only_pattern.group(2)
+        logger.warning(
+            f"Year-only format detected: '{work_period}'. "
+            "Returning standardised year range without months."
+        )
+        return f"{start_yr} - {end_yr}"
+
+    # FIX #6: Handle "YYYY - Till Date" (year-only start, no month)
+    year_till_date = re.match(
+        r'^\s*(\d{4})\s*-\s*(Till Date|Present|Current|Till Now)\s*$',
+        normalized,
+        re.IGNORECASE
+    )
+    if year_till_date:
+        start_yr = year_till_date.group(1)
+        logger.warning(
+            f"Year-only start detected: '{work_period}'. "
+            "Returning standardised year-only till-date range."
+        )
+        return f"{start_yr} - Till Date"
+
+    # Step 6: Handle any trailing non-numeric text → "Till Date"
     if re.search(r' - [^0-9]*$', normalized):
         normalized = re.sub(r' - [^0-9]*$', ' - Till Date', normalized)
-    
+
+    # FIX #12: Validate that years are 4 digits
+    years_found = re.findall(r"\b(\d{1,4})\b", normalized)
+    for yr in years_found:
+        if len(yr) != 4:
+            logger.warning(
+                f"Suspicious year token '{yr}' in period '{work_period}' – "
+                "expected 4-digit year."
+            )
+
+    # FIX #12: Warn if full month names remain
+    remaining_full = re.findall(
+        r'\b(January|February|March|April|June|July|August|'
+        r'September|October|November|December)\b',
+        normalized,
+        re.IGNORECASE
+    )
+    if remaining_full:
+        logger.warning(
+            f"Full month name(s) still present after normalisation: "
+            f"{remaining_full} in '{work_period}'"
+        )
+
     return normalized.strip()
 
+
+# US state name → 2-letter abbreviation mapping
+_US_STATE_MAP = {
+    'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
+    'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
+    'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID',
+    'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS',
+    'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+    'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN',
+    'Mississippi': 'MS', 'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE',
+    'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+    'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC',
+    'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK', 'Oregon': 'OR',
+    'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+    'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+    'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA',
+    'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY',
+    # DC
+    'District of Columbia': 'DC',
+}
+
+# Set of valid 2-letter US state abbreviations for quick lookup
+_US_STATE_ABBREVS = set(_US_STATE_MAP.values())
+
+
 def normalize_location(location: str) -> str:
-    """Normalize location format to exact specification"""
+    """
+    Normalize location to 'City, State/Country' format.
+
+    FIX #7 RULES:
+      1. INDIA RULE:  If 'India' is mentioned → return 'City, India' only
+                      (strip state codes like KA, TN, MH, Telangana, etc.)
+      2. USA RULE:    Convert full state names to 2-letter abbreviations.
+                      'City State' (no comma) → 'City, ST'
+      3. INTERNATIONAL: Return as-is, normalising spacing around comma.
+    """
     if not location:
         return location
-    
-    # Remove extra spaces and normalize
+
+    # Collapse extra whitespace
     normalized = ' '.join(location.split())
-    
-    # US state name to abbreviation mapping
-    state_mapping = {
-        'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
-        'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
-        'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
-        'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
-        'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
-        'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
-        'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH',
-        'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
-        'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
-        'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY'
-    }
-    
-    # Convert full state names to abbreviations
-    for full_state, abbrev in state_mapping.items():
-        # Match full state name at the end after comma
-        pattern = r',\s*' + re.escape(full_state) + r'$'
-        normalized = re.sub(pattern, f', {abbrev}', normalized, flags=re.IGNORECASE)
-    
-    # Fix common formatting issues
-    # Handle missing comma: "Dallas TX" -> "Dallas, TX"
-    normalized = re.sub(r'^([A-Za-z\s]+)\s+([A-Z]{2})$', r'\1, \2', normalized)
-    
-    # Fix spacing around comma: "Dallas,TX" -> "Dallas, TX" or "Dallas , TX" -> "Dallas, TX"
+
+    # ── RULE 1: INDIA ────────────────────────────────────────────────────────
+    if re.search(r'\bIndia\b', normalized, re.IGNORECASE):
+        # Extract city: first segment before comma / state abbreviation / "India"
+        city_match = re.match(r'^([^,]+)', normalized)
+        if city_match:
+            city = city_match.group(1).strip()
+            # Remove standalone 2-letter state codes (e.g. "KA", "TN")
+            city = re.sub(r'\b[A-Z]{2}\b', '', city).strip(' ,')
+            # Remove spelled-out Indian state names (heuristic: any word not
+            # "India" that precedes "India" after a comma)
+            city = re.sub(r'\s*,\s*\w+\s*$', '', city).strip()
+            # FIX #NEW-1: If extracted "city" IS "India", there is no city –
+            # just return "India" to avoid "India, India" duplication.
+            if city and city.lower() != 'india':
+                return f"{city}, India"
+        return "India"
+
+    # ── RULE 2: USA – full state name → abbreviation ─────────────────────────
+    for full_state, abbrev in _US_STATE_MAP.items():
+        pattern = r',\s*' + re.escape(full_state) + r'\b'
+        if re.search(pattern, normalized, re.IGNORECASE):
+            normalized = re.sub(
+                pattern, f', {abbrev}', normalized, flags=re.IGNORECASE
+            )
+            break
+
+    # USA – "City ST" (no comma, 2-letter abbreviation) → "City, ST"
+    no_comma_us = re.match(r'^([A-Za-z\s]+)\s+([A-Z]{2})$', normalized)
+    if no_comma_us:
+        city, state = no_comma_us.group(1).strip(), no_comma_us.group(2)
+        if state in _US_STATE_ABBREVS:
+            return f"{city}, {state}"
+
+    # ── RULE 2b: US state-only (no city) ─────────────────────────────────────
+    # If the entire string is just a US state name, append ", USA"
+    stripped = normalized.strip()
+    if stripped in _US_STATE_MAP:
+        return f"{stripped}, USA"
+    # If the entire string is a 2-letter US state abbreviation, append ", USA"
+    if stripped in _US_STATE_ABBREVS:
+        return f"{stripped}, USA"
+
+    # ── RULE 3: General cleanup ───────────────────────────────────────────────
+    # Fix spacing around comma
     normalized = re.sub(r'\s*,\s*', ', ', normalized)
-    
-    # Handle common separators: "Dallas-TX" or "Dallas|TX" -> "Dallas, TX"
-    normalized = re.sub(r'[-|]\s*', ', ', normalized)
-    
+
+    # Replace non-standard separators ( - | ) with comma-space
+    normalized = re.sub(r'\s+[-|]\s+', ', ', normalized)
+
     return normalized.strip()
+
+
+def validate_date_format(date_str: str) -> bool:
+    """
+    FIX #12: Validate that a date string matches 'MMM YYYY - MMM YYYY' or
+    'MMM YYYY - Till Date'. Logs a warning when validation fails.
+    """
+    if not date_str:
+        return False
+
+    MONTH = r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+    pattern = (
+        rf'^{MONTH}\s+\d{{4}}\s+-\s+'
+        rf'(?:{MONTH}\s+\d{{4}}|Till Date)$'
+    )
+
+    if not re.match(pattern, date_str, re.IGNORECASE):
+        logger.warning(
+            f"❌ Date format invalid: '{date_str}'. "
+            "Required format: 'MMM YYYY - MMM YYYY' or 'MMM YYYY - Till Date'. "
+            "Example correct: 'Jan 2024 - Dec 2024'"
+        )
+        return False
+
+    return True
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FIX: Vendor name sanitization
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Vendor names that must be removed from responsibility bullets when present.
+# These are commercial product/brand names that clients prefer stripped.
+_VENDOR_NAMES_TO_REMOVE = [
+    'Gearset', 'Conga', 'Muelsoft', 'MuleSoft', 'Copado',
+]
+
+# Compiled pattern: matches the vendor name preceded by common lead-ins
+# e.g. "using Gearset", "i.e conga", "like Copado", "via Gearset",
+#      or standalone at end of sentence after comma / period.
+_VENDOR_REMOVAL_PATTERN = re.compile(
+    r'(?:'
+    r'(?:using|via|with|through|like|i\.?e\.?|e\.?g\.?|tool|platform)\s+'  # lead-in
+    r'|(?<=,\s)'  # after comma
+    r')?'
+    r'(?:' + '|'.join(re.escape(v) for v in _VENDOR_NAMES_TO_REMOVE) + r')'
+    r'(?=\s*[,\.;\)]|\s*$)',
+    re.IGNORECASE,
+)
+
+
+def remove_vendor_names(text: str) -> str:
+    """
+    FIX: Remove third-party vendor brand names from a single responsibility
+    bullet line. Keeps the surrounding sentence structure intact.
+
+    Examples:
+      "Commit changes using Gearset."      → "Commit changes."
+      "3rd party integrations i.e conga."  → "3rd party integrations."
+      "Deployed using Copado and Gearset." → "Deployed."
+    """
+    if not text:
+        return text
+
+    # Remove vendor name and optional trailing comma/whitespace
+    cleaned = _VENDOR_REMOVAL_PATTERN.sub('', text)
+
+    # Collapse multi-space and tidy up orphaned trailing punctuation
+    cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+    cleaned = re.sub(r'\s+\.', '.', cleaned)          # "word  ." → "word."
+    cleaned = re.sub(r',\s*\.', '.', cleaned)          # ", ." → "."
+    cleaned = re.sub(r'\s*,\s*$', '.', cleaned)        # trailing comma → "."
+    cleaned = re.sub(r'\s+$', '', cleaned)
+    return cleaned.strip()
+
+
+def sanitize_responsibilities(items: list) -> list:
+    """Apply remove_vendor_names() to every bullet in a responsibility list."""
+    return [remove_vendor_names(item) for item in items if isinstance(item, str)]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FIX 5b: Company-embedded location extractor
+# ─────────────────────────────────────────────────────────────────────────────
+
+def extract_location_from_company_name(company_name: str) -> Optional[str]:
+    """
+    FIX 5b: When a location is embedded in the company name
+    (e.g. "IBM India Pvt Ltd, Hyderabad, India" or
+          "Cybage Software Pvt Ltd, Hyderabad, India"),
+    extract and normalise the location.
+
+    Returns the normalised location string, or None if nothing found.
+    """
+    if not company_name:
+        return None
+
+    # Pattern: detect "..., City, Country/State" at the end of a company name
+    # Also handles "..., City State" (US format)
+    embedded = re.search(
+        r',\s*([A-Za-z\s]+),\s*([A-Za-z\s]+)\s*$',
+        company_name
+    )
+    if embedded:
+        city = embedded.group(1).strip()
+        country_or_state = embedded.group(2).strip()
+        candidate = f"{city}, {country_or_state}"
+        # Run through normalize_location to apply all formatting rules
+        return normalize_location(candidate)
+
+    return None
+
+
+def enforce_tech_responsibility_rules(job: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    FIX #4: If a job has projects, forcibly clear job-level keyTechnologies
+    and responsibilities to prevent duplicate data in the final resume.
+    """
+    has_projects = bool(job.get('projects'))
+
+    if has_projects:
+        if job.get('keyTechnologies'):
+            logger.warning(
+                f"[FIX #4] Projects exist for '{job.get('companyName', '?')}' "
+                "but keyTechnologies is still filled → clearing."
+            )
+            job['keyTechnologies'] = ""
+
+        if job.get('responsibilities'):
+            logger.warning(
+                f"[FIX #4] Projects exist for '{job.get('companyName', '?')}' "
+                "but responsibilities is still filled → clearing."
+            )
+            job['responsibilities'] = []
+
+    return job
+
+
+def enforce_project_period_dedup(job: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    FIX #3: Remove project periods that are identical to the job's workPeriod.
+    A project period equal to the overall job period is almost always a copy
+    introduced by the LLM when the project has no explicit date range.
+    """
+    job_period = (job.get('workPeriod') or '').strip()
+    projects = job.get('projects')
+    if not job_period or not projects or not isinstance(projects, list):
+        return job
+
+    for project in projects:
+        if not isinstance(project, dict):
+            continue
+        proj_period = (project.get('period') or '').strip()
+        if proj_period and proj_period == job_period:
+            logger.warning(
+                f"[FIX #3] Project period '{proj_period}' is identical to job "
+                f"workPeriod for '{job.get('companyName', '?')}' → clearing "
+                "project period to avoid duplication."
+            )
+            project['period'] = ''
+
+    return job
+
+
+def validate_project_not_fabricated(
+    project_name: str,
+    job_text: str
+) -> bool:
+    """
+    FIX #10: Detect projects that were invented by the LLM from general
+    responsibilities rather than extracted from explicitly named projects.
+
+    Returns True if the project appears to be explicitly mentioned,
+    False if it looks fabricated.
+    """
+    if not project_name or not job_text:
+        return False
+
+    job_text_lower = job_text.lower()
+    project_name_lower = project_name.lower()
+
+    # Extract the actual project title between "Project N:" and the optional "/ Role"
+    name_match = re.search(r'project\s+\d+:\s*(.+?)(?:\s*/\s*.+)?$',
+                           project_name_lower)
+    if not name_match:
+        # If it doesn't even follow the format, flag it
+        logger.warning(
+            f"[FIX #10] Project name does not follow 'Project N: ...' format: "
+            f"'{project_name}'"
+        )
+        return False
+
+    actual_name = name_match.group(1).strip()
+
+    # Split into meaningful terms (> 3 chars)
+    terms = [t for t in re.split(r'\W+', actual_name) if len(t) > 3]
+    if not terms:
+        return False
+
+    found = sum(1 for t in terms if t in job_text_lower)
+    confidence = found / len(terms)
+
+    if confidence < 0.5:
+        logger.warning(
+            f"[FIX #10] Project looks FABRICATED (score {confidence:.2f}): "
+            f"'{project_name}'"
+        )
+        return False
+
+    logger.debug(
+        f"[FIX #10] Project validated (score {confidence:.2f}): '{project_name}'"
+    )
+    return True
+
+
+def extract_certification_fields(cert: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    FIX #14: Post-process a certification dict to properly separate fields
+    that the LLM may have mixed into the 'name' field.
+
+    Only repairs certs where issuer/date text has leaked into name.
+    """
+    name = cert.get('name', '')
+
+    # Heuristic: if the name contains 'Issued' or 'issued', try to split it
+    if not re.search(r'\b(?:issued|obtained|date|expires?|expiration|number|#)\b',
+                     name, re.IGNORECASE):
+        return cert  # Name looks clean, nothing to fix
+
+    logger.warning(
+        f"[FIX #14] Certification name appears to contain extra fields: '{name}'. "
+        "Attempting field extraction."
+    )
+
+    # Extract clean cert name: text before the first occurrence of 'Issued' / date
+    clean_name_match = re.match(
+        r'^(.+?)(?:\s+(?:Issued|issued|Obtained|obtained|From|from|Date|date|by)\b)',
+        name
+    )
+    if clean_name_match:
+        cert['name'] = clean_name_match.group(1).strip(' -()')
+
+    # Extract issuer if not already present
+    if not cert.get('issuedBy'):
+        issuer_m = re.search(
+            r'(?:Issued\s+by|issued\s+by|From|from|by)\s*[:\-]?\s*([^,\n(]+)',
+            name
+        )
+        if issuer_m:
+            cert['issuedBy'] = issuer_m.group(1).strip()
+
+    # Extract date obtained if not already present
+    if not cert.get('dateObtained'):
+        date_m = re.search(
+            r'(?:Obtained|obtained|Date|date|Issued)\s*[:\-]?\s*'
+            r'([A-Za-z]{3,}\s+\d{4}|\d{2}/\d{2,4})',
+            name
+        )
+        if date_m:
+            cert['dateObtained'] = date_m.group(1).strip()
+
+    # Extract cert number if not already present
+    if not cert.get('certificationNumber'):
+        num_m = re.search(
+            r'(?:Certification|certification|Number|number|ID|id|#)\s*[:\-]?\s*'
+            r'([A-Z0-9][A-Z0-9\-]+)',
+            name
+        )
+        if num_m:
+            cert['certificationNumber'] = num_m.group(1).strip()
+
+    # Extract expiration if not already present
+    if not cert.get('expirationDate'):
+        exp_m = re.search(
+            r'(?:Expir(?:es?|ation)|expires?)\s*[:\-]?\s*'
+            r'([A-Za-z]{3,}\s+\d{4}|\d{2}/\d{2,4})',
+            name,
+            re.IGNORECASE
+        )
+        if exp_m:
+            cert['expirationDate'] = exp_m.group(1).strip()
+
+    return cert
+
+
+def reorder_sections_to_standard(
+    sections: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    FIX #9: Reorder extracted sections to the standard resume format:
+        header → summary → experience → education → skills → certifications
+
+    Any extra keys (integrity_check, etc.) are preserved at the end.
+    """
+    STANDARD_ORDER = [
+        'header', 'summary', 'experience',
+        'education', 'skills', 'certifications'
+    ]
+    META_KEYS = {'integrity_check', 'integrity_warning', 'Uncategorized'}
+
+    original_order = [k for k in sections if k not in META_KEYS]
+    reordered: Dict[str, Any] = {}
+
+    for key in STANDARD_ORDER:
+        if key in sections:
+            reordered[key] = sections[key]
+
+    # Add any unexpected section keys that weren't in STANDARD_ORDER
+    for key in original_order:
+        if key not in reordered:
+            reordered[key] = sections[key]
+
+    # Preserve metadata keys
+    for key in META_KEYS:
+        if key in sections:
+            reordered[key] = sections[key]
+
+    if original_order != list(reordered.keys())[:len(original_order)]:
+        logger.info(
+            f"[FIX #9] Sections reordered from {original_order} "
+            f"to {[k for k in reordered if k not in META_KEYS]}"
+        )
+
+    return reordered
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AGENT ENUMS & DATACLASSES
+# ─────────────────────────────────────────────────────────────────────────────
 
 class AgentType(Enum):
     """Enumeration of available resume processing agents"""
@@ -139,6 +639,7 @@ class AgentType(Enum):
     SKILLS = "skills"
     CERTIFICATIONS = "certifications"
 
+
 @dataclass
 class AgentResult:
     """Structured result from an individual agent"""
@@ -148,241 +649,419 @@ class AgentResult:
     success: bool
     error_message: Optional[str] = None
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SINGLE RESUME AGENT
+# ─────────────────────────────────────────────────────────────────────────────
+
 class ResumeAgent:
     """
     Individual resume processing agent with specialized extraction capabilities
     """
-    
+
     def __init__(self, client: AsyncOpenAI, agent_type: AgentType):
         self.client = client
         self.agent_type = agent_type
         self.schema = self._get_agent_schema()
-        
+
     def _get_agent_schema(self) -> Dict[str, Any]:
-        """Get the appropriate schema for this agent type"""
         schema_map = {
-            AgentType.HEADER: ResumeAgentSchemas.get_header_agent_schema,
-            AgentType.SUMMARY: ResumeAgentSchemas.get_summary_agent_schema,
-            AgentType.EXPERIENCE: ResumeAgentSchemas.get_experience_agent_schema,
-            AgentType.EDUCATION: ResumeAgentSchemas.get_education_agent_schema,
-            AgentType.SKILLS: ResumeAgentSchemas.get_skills_agent_schema,
-            AgentType.CERTIFICATIONS: ResumeAgentSchemas.get_certifications_agent_schema
+            AgentType.HEADER:          ResumeAgentSchemas.get_header_agent_schema,
+            AgentType.SUMMARY:         ResumeAgentSchemas.get_summary_agent_schema,
+            AgentType.EXPERIENCE:      ResumeAgentSchemas.get_experience_agent_schema,
+            AgentType.EDUCATION:       ResumeAgentSchemas.get_education_agent_schema,
+            AgentType.SKILLS:          ResumeAgentSchemas.get_skills_agent_schema,
+            AgentType.CERTIFICATIONS:  ResumeAgentSchemas.get_certifications_agent_schema,
         }
         return schema_map[self.agent_type]()
-    
-    def _get_system_prompt(self) -> str:
-        """Get specialized system prompt for this agent"""
-        base_prompt = """You are a specialized resume extraction agent with 40 years of experience. 
-Your task is to extract ONLY the specific section you're responsible for with perfect accuracy.
 
-CRITICAL INSTRUCTIONS:
-1. Extract ONLY the section type you're assigned to
-2. Preserve ALL content exactly as written - no summarization
-3. Maintain original structure and formatting
-4. If the section doesn't exist, return empty arrays/objects
-5. Never invent or hallucinate information
-6. PROJECTS RULE: Only include projects if they are explicitly mentioned in the resume text. If no projects are mentioned for a job, return empty projects array."""
+    def _get_system_prompt(self) -> str:
+        base_prompt = (
+            "You are a specialized resume extraction agent with 40 years of experience.\n"
+            "Your task is to extract ONLY the specific section you're responsible for "
+            "with perfect accuracy.\n\n"
+            "CRITICAL INSTRUCTIONS:\n"
+            "1. Extract ONLY the section type you're assigned to.\n"
+            "2. Preserve ALL content exactly as written – no summarisation.\n"
+            "3. Maintain original structure and formatting.\n"
+            "4. If the section doesn't exist, return empty arrays/objects.\n"
+            "5. Never invent or hallucinate information.\n"
+            "6. PROJECTS RULE: Only include projects if they are EXPLICITLY mentioned "
+            "with a specific project name in the resume text. If no named projects are "
+            "mentioned for a job, return an empty projects array.\n"
+            "7. DATES: Always use 3-letter month abbreviations (Jan, Feb, Mar, …) and "
+            "4-digit years (2024, not '24). Never use full month names."
+        )
 
         section_specific = {
-            AgentType.HEADER: "Focus ONLY on personal information: name, title, contact details, requisition numbers.",
-            AgentType.SUMMARY: "Extract ONLY professional summary, career overview, and profile sections. Include ALL bullet points and paragraphs.",
-            AgentType.EXPERIENCE: """Extract ONLY employment history and work experience. Include ALL jobs with complete details. Missing any job is unacceptable. 
-
-CRITICAL PROJECT EXTRACTION RULES:
-- ONLY include 'projects' if explicitly mentioned specific named projects, project titles, or project-specific work for that job, if it is outside that particular job entry dont add.
-- If a job only lists general responsibilities without mentioning specific projects, return projects as empty array []
-""",
-            AgentType.EDUCATION: "Extract ONLY education, academic background, and degrees. Include ALL educational entries.",
-            AgentType.SKILLS: "Extract ONLY technical skills with proper hierarchical structure. When you see a main heading followed by colon-separated items, the main heading becomes the categoryName and the colon-separated items become subCategories. Items that appear grouped under a main heading belong together as subcategories, not as separate main categories. Preserve the exact nesting structure as written in the resume.",
-            AgentType.CERTIFICATIONS: "Extract ONLY certifications, licenses, and professional credentials. Only include explicitly mentioned certifications."
+            AgentType.HEADER: (
+                "Focus ONLY on personal information: name, title, requisition numbers."
+            ),
+            AgentType.SUMMARY: (
+                "Extract ONLY professional summary, career overview, and profile sections. "
+                "Include ALL bullet points and paragraphs without exception."
+            ),
+            AgentType.EXPERIENCE: (
+                "Extract ONLY employment history and work experience. Include ALL jobs with "
+                "complete details. Missing any job is unacceptable.\n\n"
+                "RESUME FORMAT: Job entries follow this structure:\n"
+                "  Company Name | Date Range\n"
+                "  Role Title | Location\n"
+                "  Project Name (explicit sub-project title)\n"
+                "  'Responsibilities'\n"
+                "  • Bullet points (responsibilities + inline tech mentions)\n\n"
+                "CRITICAL PROJECT EXTRACTION RULES:\n"
+                "• ONLY include 'projects' if the resume explicitly names specific projects.\n"
+                "• When projects exist, job-level 'responsibilities' and 'keyTechnologies' "
+                "  MUST be empty – all detail lives in the project objects.\n"
+                "• Number projects in DESCENDING order (most recent = highest number).\n"
+                "• Extract ALL projects – missing a project is a data-loss error.\n\n"
+                "TECHNOLOGY INFERENCE RULE (CRITICAL):\n"
+                "• There may be NO explicit 'Technologies:' label.\n"
+                "• You MUST extract technologies by scanning every responsibility bullet.\n"
+                "• Look for tool/platform/language names mentioned in bullets.\n"
+                "• Populate projectKeyTechnologies (project level) or keyTechnologies "
+                "  (job level if no projects). NEVER leave both empty when bullets exist.\n\n"
+                "LOCATION RULE:\n"
+                "• If role location is not listed separately, check if it is embedded "
+                "  in the company name (e.g. 'IBM India Pvt Ltd, Hyderabad, India').\n"
+                "• Extract city and country from company name when needed.\n"
+                "• India format: 'City, India'. USA format: 'City, ST'.\n\n"
+                "VENDOR NAME RULE:\n"
+                "• Remove third-party vendor brand names (Gearset, Conga, MuleSoft, Copado) "
+                "  from responsibility bullets where they appear after 'using', 'via', 'i.e'. "
+                "  Replace or omit the vendor name, keeping the sentence meaningful."
+            ),
+            AgentType.EDUCATION: (
+                "Extract ONLY education, academic background, and degrees. "
+                "Include ALL educational entries. "
+                "Convert degree names to standard abbreviations (BS, MS, MBA, PhD, etc.)."
+            ),
+            AgentType.SKILLS: (
+                "Extract ONLY technical skills with proper hierarchical structure.\n\n"
+                "PRIMARY FORMAT: 'CategoryName: Skill1, Skill2, Skill3'\n"
+                "  Each line starting with a label followed by colon is one category.\n"
+                "  The label is the categoryName; the comma-separated values are skills.\n"
+                "  EXAMPLE: 'Databases & Tools: MSSQL, DB2, Oracle 9i, JIRA' →\n"
+                "    categoryName='Databases & Tools', skills=['MSSQL','DB2','Oracle 9i','JIRA']\n\n"
+                "EXTRACT EVERY CATEGORY – this resume has 8+ categories including:\n"
+                "  SalesForce CRM, Programming Languages, Code Building Technologies,\n"
+                "  Databases & Tools, Other Utilities, Version Control, Frameworks,\n"
+                "  Application and Web Servers, DocGen Tools, etc.\n\n"
+                "DO NOT merge categories. DO NOT skip any. "
+                "Split each value list on commas into individual skill strings."
+            ),
+            AgentType.CERTIFICATIONS: (
+                "Extract ONLY certifications, licenses, and professional credentials.\n\n"
+                "TABLE FORMAT WARNING: The certifications section was extracted from a structured "
+                "table. The raw text will contain TABLE COLUMN HEADERS as literal lines:\n"
+                "  'Certification', 'Issued By', 'Date Obtained (MM/YY)', "
+                "'Certification Number (If Applicable)', 'Expiration Date (If Applicable)'\n"
+                "These are LAYOUT LABELS, NOT certification names. SKIP all of them.\n\n"
+                "DASH/EMPTY HANDLING: A '-' or '--' means the field is NOT PROVIDED. "
+                "Do NOT use '-' as a value in any field. Treat it as empty.\n\n"
+                "CERTIFICATION IDENTIFICATION: Real certification names come AFTER the "
+                "column header block and look like professional credential titles.\n"
+                "CRITICAL: Put ONLY the certification title in the 'name' field. "
+                "Issuer, date, cert number, and expiry go in their dedicated fields."
+            ),
         }
-        
+
         return f"{base_prompt}\n\nSPECIFIC FOCUS: {section_specific[self.agent_type]}"
-    
+
     def _add_cache_variation(self, text: str) -> str:
-        """Add cache-busting variation to prevent OpenAI caching"""
+        """Add cache-busting variation to prevent OpenAI prompt caching"""
         import random
         import time
-        
+
         timestamp = int(time.time() * 1000)
         random_id = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=8))
         agent_session = f"AGENT_{self.agent_type.value.upper()}_{timestamp}_{random_id}"
-        
-        cache_breaker = f"[Agent Session: {agent_session}]\n[Processing: {self.agent_type.value}]\n[Timestamp: {datetime.now().isoformat()}]\n\n"
-        
-        return cache_breaker + text
-    
-    async def process(self, input_text: str, model: str = 'gpt-4o-mini') -> AgentResult:
-        """
-        Process resume text and extract section-specific data
-        
-        Args:
-            input_text: Resume text (can be full resume or chunked section)
-            model: OpenAI model to use
-            
-        Returns:
-            AgentResult with extracted data and metadata
-        """
+
+        return (
+            f"[Agent Session: {agent_session}]\n"
+            f"[Processing: {self.agent_type.value}]\n"
+            f"[Timestamp: {datetime.now().isoformat()}]\n\n"
+            + text
+        )
+
+    async def process(
+        self,
+        input_text: str,
+        model: str = 'gpt-4o-mini'
+    ) -> AgentResult:
+        """Process resume text and extract section-specific data"""
         start_time = start_timing()
-        
+
         try:
-            input_length = len(input_text)
-            logger.info(f"🤖 {self.agent_type.value.title()} Agent: Starting extraction... (Input: {input_length} chars)")
-            
-            # Prepare the prompt with cache busting
+            logger.info(
+                f"🤖 {self.agent_type.value.title()} Agent: Starting extraction "
+                f"(Input: {len(input_text)} chars)"
+            )
+
             user_prompt = self._add_cache_variation(
                 f"Extract {self.agent_type.value} information from this resume:\n\n{input_text}"
             )
-            
-            # Make OpenAI API call
+
             response = await self.client.chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "system", "content": self._get_system_prompt()},
-                    {"role": "user", "content": user_prompt}
+                    {"role": "user",   "content": user_prompt},
                 ],
                 tools=[{"type": "function", "function": self.schema}],
                 tool_choice={"type": "function", "function": {"name": self.schema["name"]}},
                 max_tokens=16384,
-                temperature=0.1
+                temperature=0.1,
             )
-            
-            # Calculate processing time
+
             processing_time = (datetime.now() - start_time).total_seconds()
-            
-            # Log cache analysis
             log_cache_analysis(response, self.agent_type.value)
-            
-            # Parse the response
-            tool_call_arguments = response.choices[0].message.tool_calls[0].function.arguments
-            extracted_data = json.loads(tool_call_arguments)
-            
-            # Clean bullet points if needed
+
+            tool_args = response.choices[0].message.tool_calls[0].function.arguments
+            extracted_data = json.loads(tool_args)
             cleaned_data = self._clean_extracted_data(extracted_data)
-            
-            logger.info(f"✅ {self.agent_type.value.title()} Agent: Extraction successful ({processing_time:.2f}s)")
-            
+
+            logger.info(
+                f"✅ {self.agent_type.value.title()} Agent: Extraction successful "
+                f"({processing_time:.2f}s)"
+            )
             return AgentResult(
                 agent_type=self.agent_type,
                 data=cleaned_data,
                 processing_time=processing_time,
-                success=True
+                success=True,
             )
-            
+
         except json.JSONDecodeError as e:
-            logger.error(f"❌ {self.agent_type.value.title()} Agent: JSON parsing error - {e}")
+            logger.error(f"❌ {self.agent_type.value.title()} Agent: JSON parse error – {e}")
             return self._create_error_result(start_time, f"JSON parsing failed: {e}")
-            
+
         except Exception as e:
-            logger.error(f"❌ {self.agent_type.value.title()} Agent: Processing failed - {e}")
+            logger.error(f"❌ {self.agent_type.value.title()} Agent: Processing failed – {e}")
             return self._create_error_result(start_time, str(e))
-    
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # DATA CLEANING
+    # ─────────────────────────────────────────────────────────────────────────
+
     def _clean_extracted_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Clean bullet points and format extracted data"""
+        """
+        Clean bullet prefixes, run normalization functions, and apply all
+        post-processing fixes.
+
+        Every loop that iterates over LLM-returned arrays guards with
+        isinstance(..., dict) so a stray string entry never raises
+        "'str' object has no attribute 'get'".
+        """
+
+        # ── SUMMARY ──────────────────────────────────────────────────────────
         if self.agent_type == AgentType.SUMMARY and data.get('professionalSummary'):
-            data['professionalSummary'] = [strip_bullet_prefix(item) for item in data['professionalSummary']]
-            
+            data['professionalSummary'] = [
+                strip_bullet_prefix(item)
+                for item in data['professionalSummary']
+                if isinstance(item, str)
+            ]
             if data.get('summarySections'):
                 for section in data['summarySections']:
+                    if not isinstance(section, dict):
+                        continue
                     if section.get('content'):
-                        section['content'] = [strip_bullet_prefix(item) for item in section['content']]
-        
+                        section['content'] = [
+                            strip_bullet_prefix(item)
+                            for item in section['content']
+                            if isinstance(item, str)
+                        ]
+
+        # ── EXPERIENCE ───────────────────────────────────────────────────────
         elif self.agent_type == AgentType.EXPERIENCE and data.get('employmentHistory'):
-            for job in data['employmentHistory']:
-                # Normalize work period format
+
+            # Ensure employmentHistory is actually a list; wrap a stray dict;
+            # discard if the LLM returned a plain string.
+            emp_history = data['employmentHistory']
+            if isinstance(emp_history, str):
+                logger.warning(
+                    "[GUARD] employmentHistory is a string, not a list – discarding. "
+                    f"Value: {emp_history[:80]}"
+                )
+                data['employmentHistory'] = []
+                emp_history = []
+            elif isinstance(emp_history, dict):
+                emp_history = [emp_history]
+                data['employmentHistory'] = emp_history
+
+            for job in emp_history:
+                # Guard: skip any entry that is not a dict
+                if not isinstance(job, dict):
+                    logger.warning(
+                        f"[GUARD] Skipping non-dict employmentHistory entry: "
+                        f"{type(job).__name__} → {str(job)[:80]}"
+                    )
+                    continue
+
+                # Normalise work period
                 if job.get('workPeriod'):
                     job['workPeriod'] = normalize_work_period(job['workPeriod'])
-                
-                # Normalize location format
+
+                # FIX 5c: If location is missing, try extracting from company name
+                # e.g. "IBM India Pvt Ltd, Hyderabad, India" → "Hyderabad, India"
+                if not job.get('location') and job.get('companyName'):
+                    extracted = extract_location_from_company_name(job['companyName'])
+                    if extracted:
+                        job['location'] = extracted
+                        logger.info(
+                            f"[FIX 5c] Extracted location '{extracted}' from "
+                            f"company name '{job['companyName']}'"
+                        )
+
+                # Normalise location
                 if job.get('location'):
                     job['location'] = normalize_location(job['location'])
-                
-                if job.get('responsibilities'):
-                    job['responsibilities'] = [strip_bullet_prefix(item) for item in job['responsibilities']]
-                if job.get('subsections'):
+
+                # Strip bullet prefixes from responsibilities
+                if job.get('responsibilities') and isinstance(job['responsibilities'], list):
+                    job['responsibilities'] = sanitize_responsibilities([
+                        strip_bullet_prefix(item)
+                        for item in job['responsibilities']
+                        if isinstance(item, str)
+                    ])
+
+                # Normalise subsections
+                if job.get('subsections') and isinstance(job['subsections'], list):
                     for subsection in job['subsections']:
-                        if subsection.get('content'):
-                            subsection['content'] = [strip_bullet_prefix(item) for item in subsection['content']]
-                if job.get('projects'):
+                        if not isinstance(subsection, dict):
+                            continue
+                        if subsection.get('content') and isinstance(subsection['content'], list):
+                            subsection['content'] = [
+                                strip_bullet_prefix(item)
+                                for item in subsection['content']
+                                if isinstance(item, str)
+                            ]
+
+                # Normalise projects
+                if job.get('projects') and isinstance(job['projects'], list):
                     for project in job['projects']:
-                        # Normalize project period format
+                        # Guard: skip non-dict project entries
+                        if not isinstance(project, dict):
+                            logger.warning(
+                                f"[GUARD] Skipping non-dict project entry: "
+                                f"{type(project).__name__} → {str(project)[:80]}"
+                            )
+                            continue
                         if project.get('period'):
                             project['period'] = normalize_work_period(project['period'])
-                        if project.get('projectResponsibilities'):
-                            project['projectResponsibilities'] = [strip_bullet_prefix(item) for item in project['projectResponsibilities']]
-                if job.get('clientProjects'):
-                    for client_project in job['clientProjects']:
-                        if client_project.get('responsibilities'):
-                            client_project['responsibilities'] = [strip_bullet_prefix(item) for item in client_project['responsibilities']]
-        
+                        if project.get('projectLocation'):
+                            project['projectLocation'] = normalize_location(
+                                project['projectLocation']
+                            )
+                        if project.get('projectResponsibilities') and isinstance(
+                            project['projectResponsibilities'], list
+                        ):
+                            project['projectResponsibilities'] = sanitize_responsibilities([
+                                strip_bullet_prefix(item)
+                                for item in project['projectResponsibilities']
+                                if isinstance(item, str)
+                            ])
+
+                # Strip non-dict projects from the list before calling enforce functions
+                if isinstance(job.get('projects'), list):
+                    job['projects'] = [p for p in job['projects'] if isinstance(p, dict)]
+
+                # ✅ FIX #4: Clear job-level tech/responsibilities when projects exist
+                enforce_tech_responsibility_rules(job)
+
+                # ✅ FIX #3: Remove project periods duplicated from job workPeriod
+                enforce_project_period_dedup(job)
+
+            # Remove any non-dict entries from the final list so downstream
+            # code never receives a string where a job dict is expected.
+            data['employmentHistory'] = [
+                j for j in data['employmentHistory'] if isinstance(j, dict)
+            ]
+
+        # ── EDUCATION ────────────────────────────────────────────────────────
         elif self.agent_type == AgentType.EDUCATION and data.get('education'):
-            for education in data['education']:
-                # Normalize location format
-                if education.get('location'):
-                    education['location'] = normalize_location(education['location'])
-                
-                # Normalize date format (apply month abbreviation)
-                if education.get('date'):
-                    education['date'] = normalize_work_period(education['date'])
-        
+            for edu in data['education']:
+                if not isinstance(edu, dict):
+                    continue
+                if edu.get('location'):
+                    edu['location'] = normalize_location(edu['location'])
+                if edu.get('date'):
+                    edu['date'] = normalize_work_period(edu['date'])
+
+        # ── SKILLS ───────────────────────────────────────────────────────────
         elif self.agent_type == AgentType.SKILLS and data.get('skillCategories'):
             for category in data['skillCategories']:
-                # Ensure subCategories is always an array
+                if not isinstance(category, dict):
+                    continue
                 if not isinstance(category.get('subCategories'), list):
                     category['subCategories'] = []
-        
+
+        # ── CERTIFICATIONS ───────────────────────────────────────────────────
         elif self.agent_type == AgentType.CERTIFICATIONS and data.get('certifications'):
             for cert in data['certifications']:
-                # Normalize certification dates (apply month abbreviation)
+                # Normalise dates
                 if cert.get('dateObtained'):
                     cert['dateObtained'] = normalize_work_period(cert['dateObtained'])
                 if cert.get('expirationDate'):
                     cert['expirationDate'] = normalize_work_period(cert['expirationDate'])
-        
-        return data
-    
+                # ✅ FIX #14: Repair mixed-up fields
+                cert = extract_certification_fields(cert)
 
-    
-    def _create_error_result(self, start_time: datetime, error_message: str) -> AgentResult:
-        """Create an error result"""
+        return data
+
+    def _create_error_result(
+        self,
+        start_time: datetime,
+        error_message: str
+    ) -> AgentResult:
         processing_time = (datetime.now() - start_time).total_seconds()
-        
         return AgentResult(
             agent_type=self.agent_type,
             data={},
             processing_time=processing_time,
             success=False,
-            error_message=error_message
+            error_message=error_message,
         )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MULTI-AGENT ORCHESTRATOR
+# ─────────────────────────────────────────────────────────────────────────────
 
 class MultiAgentResumeProcessor:
     """
-    Orchestrates multiple specialized agents for parallel resume processing
+    Orchestrates multiple specialized agents for parallel resume processing.
     """
-    
+
     def __init__(self, client: AsyncOpenAI):
         self.client = client
-        
+
     async def process_resume_with_agents(
-        self, 
-        raw_text: str, 
-        model: str = 'gpt-4o-mini'
+        self,
+        raw_text: str,
+        model: str = 'gpt-4o-mini',
     ) -> AsyncGenerator[Dict[str, Any], None]:
-        """
-        Process resume using multiple specialized agents - simple version
-        """
+        """Process resume using multiple specialized agents in parallel."""
         logger.info("Starting resume processing...")
-        
+
         try:
-            # Chunk the resume
             from .chunk_resume import chunk_resume_from_bold_headings
+
+            # Chunk the resume
             sections = chunk_resume_from_bold_headings(raw_text)
-            
-            # Check if chunking was successful
+
             if 'error' in sections:
-                logger.warning(f"Chunking failed: {sections['error']} - Using full resume for all agents")
+                logger.warning(
+                    f"Chunking failed: {sections['error']} – "
+                    "using full resume for all agents"
+                )
                 sections = {}
-            
+
+            # ✅ FIX #9: Reorder sections to standard order
+            if sections:
+                sections = reorder_sections_to_standard(sections)
+
             # Create all agents
             agents = [
                 ResumeAgent(self.client, AgentType.HEADER),
@@ -390,121 +1069,119 @@ class MultiAgentResumeProcessor:
                 ResumeAgent(self.client, AgentType.EXPERIENCE),
                 ResumeAgent(self.client, AgentType.EDUCATION),
                 ResumeAgent(self.client, AgentType.SKILLS),
-                ResumeAgent(self.client, AgentType.CERTIFICATIONS)
+                ResumeAgent(self.client, AgentType.CERTIFICATIONS),
             ]
-            
-            # Prepare intelligent inputs for each agent
+
+            # Prepare inputs for each agent
             agent_inputs = self._prepare_agent_inputs(agents, sections, raw_text)
-            
-            # Process all agents in parallel
+
+            # Run all agents in parallel
             agent_tasks = [
-                agent.process(agent_inputs['inputs'][agent.agent_type], model) 
+                agent.process(agent_inputs['inputs'][agent.agent_type], model)
                 for agent in agents
             ]
             results = await asyncio.gather(*agent_tasks, return_exceptions=True)
-            
-            # Process results
+
             successful_results = []
             failed_agents = []
-            
+
             for result in results:
                 if isinstance(result, Exception):
-                    logger.error(f"Agent task failed with exception: {result}")
+                    logger.error(f"Agent task raised exception: {result}")
                     failed_agents.append(str(result))
                     continue
-                    
                 if result.success:
                     successful_results.append(result)
                 else:
-                    failed_agents.append(f"{result.agent_type.value}: {result.error_message}")
-            
-            # Combine results into final structure
-            combined_data = self._combine_agent_results(successful_results)
-            
-            # Report any failures
+                    failed_agents.append(
+                        f"{result.agent_type.value}: {result.error_message}"
+                    )
+
             if failed_agents:
                 logger.warning(f"Some agents failed: {failed_agents}")
-            
-            # Only yield final result
+
+            combined_data = self._combine_agent_results(successful_results)
+
             yield {
                 'type': 'final_data',
                 'data': combined_data,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
             }
-            
+
         except Exception as e:
             logger.error(f"Resume processing failed: {e}")
             yield {
                 'type': 'error',
                 'message': f'Resume processing failed: {str(e)}',
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
             }
-    
-    def _prepare_agent_inputs(self, agents: List[ResumeAgent], sections: Dict[str, str], raw_text: str) -> Dict[str, Any]:
-        """
-        Prepare intelligent inputs for each agent based on chunked sections
-        
-        Args:
-            agents: List of resume agents
-            sections: Chunked resume sections
-            raw_text: Complete resume text as fallback
-            
-        Returns:
-            Dictionary with agent inputs and strategy information
-        """
-        agent_inputs = {}
-        strategy = {}
-        
-        # Section mapping for agents
+
+    def _prepare_agent_inputs(
+        self,
+        agents: List[ResumeAgent],
+        sections: Dict[str, str],
+        raw_text: str,
+    ) -> Dict[str, Any]:
+        """Prepare intelligent inputs for each agent based on chunked sections."""
+        agent_inputs: Dict[AgentType, str] = {}
+        strategy: Dict[str, str] = {}
+
         section_mapping = {
-            AgentType.HEADER: 'header',
-            AgentType.SUMMARY: 'summary', 
-            AgentType.EXPERIENCE: 'experience',
-            AgentType.EDUCATION: 'education',
-            AgentType.SKILLS: 'skills',
-            AgentType.CERTIFICATIONS: 'certifications'  # Special case - always gets full resume
+            AgentType.HEADER:         'header',
+            AgentType.SUMMARY:        'summary',
+            AgentType.EXPERIENCE:     'experience',
+            AgentType.EDUCATION:      'education',
+            AgentType.SKILLS:         'skills',
+            AgentType.CERTIFICATIONS: 'certifications',
         }
-        
+
         for agent in agents:
-            agent_type = agent.agent_type
-            section_key = section_mapping[agent_type]
-            
-            # 🎯 CERTIFICATION AGENT: Always gets full resume
-            if agent_type == AgentType.CERTIFICATIONS:
-                agent_inputs[agent_type] = raw_text
-                strategy[agent_type.value] = 'full_resume_always'
-                logger.info(f"🔍 {agent_type.value.title()} Agent: Using full resume (certification rule)")
+            at = agent.agent_type
+            key = section_mapping[at]
+
+            # Certifications always get the full resume for best recall
+            if at == AgentType.CERTIFICATIONS:
+                agent_inputs[at] = raw_text
+                strategy[at.value] = 'full_resume_always'
+                logger.info(
+                    f"🔍 {at.value.title()} Agent: Using full resume (certification rule)"
+                )
                 continue
-            
-            # 🎯 OTHER AGENTS: Use chunked section if available, otherwise full resume
-            if section_key in sections and sections[section_key] and sections[section_key].strip():
-                # Use chunked section
-                chunked_content = sections[section_key].strip()
-                
-                # For header agent, also include some context from the beginning
-                if agent_type == AgentType.HEADER:
-                    # Include first 1000 characters for better context
-                    context_text = raw_text[:1000]
-                    agent_inputs[agent_type] = f"{context_text}\n\n--- HEADER SECTION ---\n{chunked_content}"
-                    strategy[agent_type.value] = 'chunked_with_context'
+
+            if key in sections and sections.get(key) and sections[key].strip():
+                chunked = sections[key].strip()
+
+                if at == AgentType.HEADER:
+                    # Give header agent additional context from the top of the file
+                    context = raw_text[:1000]
+                    agent_inputs[at] = (
+                        f"{context}\n\n--- HEADER SECTION ---\n{chunked}"
+                    )
+                    strategy[at.value] = 'chunked_with_context'
                 else:
-                    agent_inputs[agent_type] = chunked_content
-                    strategy[agent_type.value] = 'chunked_section'
-                
-                logger.info(f"✅ {agent_type.value.title()} Agent: Using chunked section ({len(chunked_content)} chars)")
+                    agent_inputs[at] = chunked
+                    strategy[at.value] = 'chunked_section'
+
+                logger.info(
+                    f"✅ {at.value.title()} Agent: Using chunked section "
+                    f"({len(chunked)} chars)"
+                )
             else:
-                # Fallback to full resume
-                agent_inputs[agent_type] = raw_text
-                strategy[agent_type.value] = 'full_resume_fallback'
-                logger.info(f"⚠️ {agent_type.value.title()} Agent: Section missing/empty, using full resume")
-        
-        return {
-            'inputs': agent_inputs,
-            'strategy': strategy
-        }
-    
-    def _combine_agent_results(self, results: List[AgentResult]) -> Dict[str, Any]:
-        combined_data = {
+                agent_inputs[at] = raw_text
+                strategy[at.value] = 'full_resume_fallback'
+                logger.info(
+                    f"⚠️ {at.value.title()} Agent: Section missing/empty, "
+                    "using full resume"
+                )
+
+        return {'inputs': agent_inputs, 'strategy': strategy}
+
+    def _combine_agent_results(
+        self,
+        results: List[AgentResult],
+    ) -> Dict[str, Any]:
+        """Merge results from all agents into a single resume data structure."""
+        combined: Dict[str, Any] = {
             'name': '',
             'title': '',
             'requisitionNumber': '',
@@ -515,57 +1192,61 @@ class MultiAgentResumeProcessor:
             'education': [],
             'certifications': [],
             'technicalSkills': {},
-            'skillCategories': []
+            'skillCategories': [],
         }
 
         header_title = ''
         summary_title = ''
 
         for result in results:
-            agent_data = result.data
+            d = result.data
 
             if result.agent_type == AgentType.HEADER:
-                header_title = (agent_data.get('title') or '').strip()
-                raw_name = (agent_data.get('name') or '').strip()
+                header_title = (d.get('title') or '').strip()
+                raw_name = (d.get('name') or '').strip()
+                # ✅ FIX #8: normalize_person_name now applies title-casing
                 cleaned_name = normalize_person_name(raw_name)
-                combined_data.update({
+                combined.update({
                     'name': cleaned_name or raw_name,
-                    'requisitionNumber': agent_data.get('requisitionNumber', '')
+                    'requisitionNumber': d.get('requisitionNumber', ''),
                 })
 
             elif result.agent_type == AgentType.SUMMARY:
-                summary_title = (agent_data.get('title') or '').strip()
-                combined_data.update({
-                    'professionalSummary': agent_data.get('professionalSummary', []),
-                    'summarySections': agent_data.get('summarySections', [])
+                summary_title = (d.get('title') or '').strip()
+                combined.update({
+                    'professionalSummary': d.get('professionalSummary', []),
+                    'summarySections':     d.get('summarySections', []),
                 })
-                combined_data['subsections'] = combined_data['summarySections']
+                combined['subsections'] = combined['summarySections']
 
             elif result.agent_type == AgentType.EXPERIENCE:
-                combined_data['employmentHistory'] = agent_data.get('employmentHistory', [])
+                combined['employmentHistory'] = d.get('employmentHistory', [])
 
             elif result.agent_type == AgentType.EDUCATION:
-                combined_data['education'] = agent_data.get('education', [])
+                combined['education'] = d.get('education', [])
 
             elif result.agent_type == AgentType.SKILLS:
-                combined_data.update({
-                    'technicalSkills': agent_data.get('technicalSkills', {}),
-                    'skillCategories': agent_data.get('skillCategories', [])
+                combined.update({
+                    'technicalSkills':  d.get('technicalSkills', {}),
+                    'skillCategories':  d.get('skillCategories', []),
                 })
 
             elif result.agent_type == AgentType.CERTIFICATIONS:
-                combined_data['certifications'] = agent_data.get('certifications', [])
+                combined['certifications'] = d.get('certifications', [])
 
-        def normalize_title(value: str) -> str:
-            return re.sub(r'\s+', ' ', (value or '').strip()).lower()
+        # Resolve title from header vs summary agents
+        def _norm(v: str) -> str:
+            return re.sub(r'\s+', ' ', (v or '').strip()).lower()
 
-        n_header = normalize_title(header_title)
-        n_summary = normalize_title(summary_title)
+        n_header  = _norm(header_title)
+        n_summary = _norm(summary_title)
 
         if n_header and n_summary:
-            combined_data['title'] = header_title if n_header == n_summary else ''
+            combined['title'] = (
+                header_title if n_header == n_summary else ''
+            )
         else:
-            combined_data['title'] = header_title or summary_title or ''
+            combined['title'] = header_title or summary_title or ''
 
         logger.info(f"✅ Combined data from {len(results)} agents successfully")
-        return combined_data
+        return combined
